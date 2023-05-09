@@ -196,6 +196,36 @@ FT1_3=T13()
 MUNICIPIOS=sorted(FT1_3['CODIGO_MUNICIPIO'].unique().tolist())
 DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
 
+def PlotlyBarrasSegmento(df,column):
+    fig=make_subplots(rows=1,cols=1)
+    #mindf=df[column].min()/escalamiento-(df[column].min()/escalamiento)*0.3
+    #maxdf=df[column].max()/escalamiento+(df[column].max()/escalamiento)*0.3 
+    paleta_colores=["#0593A2","#FF7A48","#E3371E"]
+    SEG=df['SEGMENTO'].unique().tolist()
+    for i,segmento in enumerate(SEG):
+        fig.add_trace(go.Bar(x=df[df['SEGMENTO']==segmento]['PERIODO'],
+                            y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[i]))
+    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=column+' ', row=1, col=1)                        
+    fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
+    ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
+    fig.update_layout(height=550,legend_title=None)
+    fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+    title={
+    'text':None,
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top'})        
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
+    fig.update_layout(yaxis_tickformat ='d')
+    fig.add_annotation(
+    showarrow=False,
+    text=None,
+    font=dict(size=11), xref='x domain',x=0.5,yref='y domain',y=-0.4)      
+    return fig
+
 select_servicio=st.sidebar.selectbox('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'])
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
 dict_variables={'CANTIDAD_LINEAS_ACCESOS': 'ACCESOS', 'VALOR_FACTURADO_O_COBRADO': 'VALOR FACTURADO', 'ID_EMPRESA': 'NÚMERO EMPRESAS','CODSEG': 'SEGMENTO'}
@@ -210,20 +240,40 @@ if select_servicio=='Internet Fijo':
         InternetFijo.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoNac=IntFijoNac.rename(columns=dict_variables)
         select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
-        col1,col2=st.columns([1,1])
+        col1,col2=st.columns([1.5,1])
         with col1:
-            figAccIntFijo1=px.bar(IntFijoNac, x='PERIODO', y=select_variable, color='SEGMENTO')
-            figAccIntFijo1.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
-            st.plotly_chart(figAccIntFijo1, use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(IntFijoNac,select_variable), use_column_width=True)
         with col2:
             AgGrid(IntFijoNac[['PERIODO','SEGMENTO',select_variable]])
 
-    
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
+        st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
+        IntFijoDep=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        InternetFijo.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        IntFijoDep=IntFijoDep.rename(columns=dict_variables)
+        IntFijoDep=IntFijoDep[IntFijoDep['CODIGO_DEPARTAMENTO']==select_dpto]
+        select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        col1,col2=st.columns([1.5,1])
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(IntFijoDep,select_variable), use_column_width=True)
+        with col2:
+            AgGrid(IntFijoDep[['PERIODO','SEGMENTO',select_variable]])
         
     if select_ambito=='Municipal':
-        select_dpto=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
+        select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
+        st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
+        IntFijoMUNI=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        InternetFijo.groupby(['PERIODO','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        IntFijoMUNI=IntFijoMUNI.rename(columns=dict_variables)
+        IntFijoMUNI=IntFijoMUNI[IntFijoMUNI['CODIGO_MUNICIPIO']==select_muni]
+        select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        col1,col2=st.columns([1.5,1])
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(IntFijoMUNI,select_variable), use_column_width=True)
+        with col2:
+            AgGrid(IntFijoMUNI[['PERIODO','SEGMENTO',select_variable]])
+
         
 if select_servicio=='TV por suscripción':
     st.markdown(r"""<div class="titulo"><h2>Televisión por suscripción</h2></div>""",unsafe_allow_html=True)
