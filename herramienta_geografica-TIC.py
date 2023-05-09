@@ -210,7 +210,7 @@ if select_servicio=='Internet Fijo':
         InternetFijo.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoNac=IntFijoNac.rename(columns=dict_variables)
         select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
-        col1,col2=st.columns(2)
+        col1,col2=st.columns([2,1])
         with col1:
             figAccIntFijo1=px.bar(IntFijoNac, x='PERIODO', y=select_variable, color='SEGMENTO')
             st.plotly_chart(figAccIntFijo1, use_column_width=True)
