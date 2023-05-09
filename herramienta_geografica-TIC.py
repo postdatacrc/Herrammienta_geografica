@@ -209,11 +209,13 @@ if select_servicio=='Internet Fijo':
         IntFijoNac=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
         InternetFijo.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoNac=IntFijoNac.rename(columns=dict_variables)
+        select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         col1,col2=st.columns(2)
         with col1:
-            select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NUMERO EMPRESAS'])
+            figAccIntFijo1=px.bar(IntFijoNac, x='PERIODO', y=select_variable, color='SEGMENTO')
+            st.plotly_chart(figAccIntFijo1, use_column_width=True)
         with col2:
-            AgGrid(IntFijoNac)
+            AgGrid(IntFijoNac[['PERIODO','SEGMENTO',select_variable]])
 
     
     if select_ambito=='Departamental':
