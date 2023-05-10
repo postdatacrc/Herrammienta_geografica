@@ -30,9 +30,9 @@ Estilo_css="""<style type="text/css">
         font-family: 'Poppins', serif; 
     }  
     [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
-        width: 200px;}
+        width: 250px;}
     [data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
-        width: 200px;
+        width: 250px;
         top:100px;
         margin-left: -300px;}
     h1{ background: rgb(215,235,252);
@@ -155,8 +155,8 @@ Estilo_css="""<style type="text/css">
         color:#7a44f2;
         background:none;
     }
-    .e1fqkh3o11 {
-        font-size:5px;
+    .css-2ewto4 {
+        max-width:20%;
     }
     </style>"""
 Barra_superior="""
