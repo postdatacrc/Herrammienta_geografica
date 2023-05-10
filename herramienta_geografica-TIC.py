@@ -30,9 +30,9 @@ Estilo_css="""<style type="text/css">
         font-family: 'Poppins', serif; 
     }  
     [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
-        width: 300px;}
+        width: 200px;}
     [data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
-        width: 300px;
+        width: 200px;
         top:100px;
         margin-left: -300px;}
     h1{ background: rgb(215,235,252);
@@ -155,6 +155,9 @@ Estilo_css="""<style type="text/css">
         color:#7a44f2;
         background:none;
     }
+    .e1fqkh3o11 {
+        font-size:5px;
+    }
     </style>"""
 Barra_superior="""
 <div class="barra-superior">
@@ -229,6 +232,7 @@ def PlotlyBarrasSegmento(df,column):
 select_servicio=st.sidebar.selectbox('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'])
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
 dict_variables={'CANTIDAD_LINEAS_ACCESOS': 'ACCESOS', 'VALOR_FACTURADO_O_COBRADO': 'VALOR FACTURADO', 'ID_EMPRESA': 'NÚMERO EMPRESAS','CODSEG': 'SEGMENTO'}
+select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
 
 if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
@@ -239,7 +243,7 @@ if select_servicio=='Internet Fijo':
         IntFijoNac=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
         InternetFijo.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoNac=IntFijoNac.rename(columns=dict_variables)
-        select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        
         col1,col2=st.columns([2,1])
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoNac,select_variable), use_column_width=True)
@@ -253,7 +257,6 @@ if select_servicio=='Internet Fijo':
         InternetFijo.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoDep=IntFijoDep.rename(columns=dict_variables)
         IntFijoDep=IntFijoDep[IntFijoDep['CODIGO_DEPARTAMENTO']==select_dpto]
-        select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         col1,col2=st.columns([2,1])
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoDep,select_variable), use_column_width=True)
@@ -267,7 +270,6 @@ if select_servicio=='Internet Fijo':
         InternetFijo.groupby(['PERIODO','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoMUNI=IntFijoMUNI.rename(columns=dict_variables)
         IntFijoMUNI=IntFijoMUNI[IntFijoMUNI['CODIGO_MUNICIPIO']==select_muni]
-        select_variable=st.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         col1,col2=st.columns([2,1])
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoMUNI,select_variable), use_column_width=True)
