@@ -155,9 +155,6 @@ Estilo_css="""<style type="text/css">
         color:#7a44f2;
         background:none;
     }
-    .css-2ewto4 {
-        max-width:20%;
-    }
     </style>"""
 Barra_superior="""
 <div class="barra-superior">
@@ -174,9 +171,9 @@ Barra_superior="""
 st.markdown(Estilo_css+Barra_superior,unsafe_allow_html=True)
 st.markdown(r"""<div><h1>Herramienta geográfica Telecomunicaciones</h1></div>""",unsafe_allow_html=True)
 
-st.sidebar.markdown(r"""<b style="font-size: 26px;text-align:center"> Herramienta geográfica TIC</b> """,unsafe_allow_html=True)
-st.sidebar.markdown(r"""<hr>""",unsafe_allow_html=True)
-st.sidebar.markdown("""<b>Índice</b>""", unsafe_allow_html=True)
+#st.sidebar.markdown(r"""<b style="font-size: 26px;text-align:center"> Herramienta geográfica TIC</b> """,unsafe_allow_html=True)
+#st.sidebar.markdown(r"""<hr>""",unsafe_allow_html=True)
+st.sidebar.markdown("""<b>Menú</b>""", unsafe_allow_html=True)
 
 #Función para traer base
 @st.cache()
@@ -232,7 +229,6 @@ def PlotlyBarrasSegmento(df,column):
 select_servicio=st.sidebar.selectbox('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'])
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
 dict_variables={'CANTIDAD_LINEAS_ACCESOS': 'ACCESOS', 'VALOR_FACTURADO_O_COBRADO': 'VALOR FACTURADO', 'ID_EMPRESA': 'NÚMERO EMPRESAS','CODSEG': 'SEGMENTO'}
-select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
 
 if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
@@ -243,7 +239,7 @@ if select_servicio=='Internet Fijo':
         IntFijoNac=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
         InternetFijo.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoNac=IntFijoNac.rename(columns=dict_variables)
-        
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         col1,col2=st.columns([2,1])
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoNac,select_variable), use_column_width=True)
@@ -252,6 +248,8 @@ if select_servicio=='Internet Fijo':
 
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
         IntFijoDep=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
         InternetFijo.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
@@ -265,6 +263,7 @@ if select_servicio=='Internet Fijo':
         
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
         IntFijoMUNI=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
         InternetFijo.groupby(['PERIODO','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
