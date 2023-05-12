@@ -5,6 +5,7 @@ import plotly.express as px
 import streamlit as st
 from plotly.subplots import make_subplots
 import glob
+import math
 import re
 import os
 from urllib.request import urlopen
@@ -64,9 +65,10 @@ Estilo_css="""<style type="text/css">
         margin-top:135px;
     }
     .e16nr0p31 {display:none}
+    .e1fqkh3o11 {width : 10%}
     .css-y3whyl, .css-xqnn38 {background-color:#ccc}
     .e8zbici0 {display:none}
-    .e8zbici2 {display:none}
+    .e8zbici2 {display:none} 
     .e19lei0e1 {display:none}
     .css-1uvyptr:hover,.css-1uvyptr {background: #ccc}
     .e1tzin5v2 {
@@ -167,9 +169,33 @@ Barra_superior="""
         </a>
     </div>
 </div>"""
+Tabla_html=r"""<style> 
+.styled-table thead tr {
+    background-color: #0593A2;
+    color: #ffffff;
+    text-align: left;
+}
+.styled-table th,
+.styled-table td {
+    padding: 12px 15px;
+}
+.styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+.styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+.styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #0593A2;
+}
+    </style> 
+"""
 
-st.markdown(Estilo_css+Barra_superior,unsafe_allow_html=True)
-st.markdown(r"""<div><h1>Herramienta geográfica Telecomunicaciones</h1></div>""",unsafe_allow_html=True)
+
+st.markdown(Estilo_css+Barra_superior+Tabla_html,unsafe_allow_html=True)
+#st.markdown("""<h1>Herramienta geográfica Telecomunicaciones</h1>""",unsafe_allow_html=True)
+st.title("Herramienta geográfica Telecomunicaciones")
+
 
 #st.sidebar.markdown(r"""<b style="font-size: 26px;text-align:center"> Herramienta geográfica TIC</b> """,unsafe_allow_html=True)
 #st.sidebar.markdown(r"""<hr>""",unsafe_allow_html=True)
@@ -196,15 +222,18 @@ FT1_3=T13()
 MUNICIPIOS=sorted(FT1_3['CODIGO_MUNICIPIO'].unique().tolist())
 DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
 
+fact_escala={'ACCESOS':1e6,'VALOR FACTURADO':1e9,'NÚMERO EMPRESAS':1}
+
 def PlotlyBarrasSegmento(df,column):
     fig=make_subplots(rows=1,cols=1)
+    factor_escalamiento=orderOfMagnitude(df[column].max())
     #mindf=df[column].min()/escalamiento-(df[column].min()/escalamiento)*0.3
     #maxdf=df[column].max()/escalamiento+(df[column].max()/escalamiento)*0.3 
     paleta_colores=["#0593A2","#FF7A48","#E3371E"]
     SEG=df['SEGMENTO'].unique().tolist()
     for i,segmento in enumerate(SEG):
         fig.add_trace(go.Bar(x=df[df['SEGMENTO']==segmento]['PERIODO'],
-                            y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[i]))
+                            y=df[df['SEGMENTO']==segmento][column]/fact_escala[column],name=segmento,marker_color=paleta_colores[i]))
     fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=column+' ', row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
@@ -226,6 +255,9 @@ def PlotlyBarrasSegmento(df,column):
     font=dict(size=11), xref='x domain',x=0.5,yref='y domain',y=-0.4)      
     return fig
 
+def orderOfMagnitude(number):
+    return math.floor(math.log(number, 10))
+
 select_servicio=st.sidebar.selectbox('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'])
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
 dict_variables={'CANTIDAD_LINEAS_ACCESOS': 'ACCESOS', 'VALOR_FACTURADO_O_COBRADO': 'VALOR FACTURADO', 'ID_EMPRESA': 'NÚMERO EMPRESAS','CODSEG': 'SEGMENTO'}
@@ -240,11 +272,19 @@ if select_servicio=='Internet Fijo':
         InternetFijo.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoNac=IntFijoNac.rename(columns=dict_variables)
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
-        col1,col2=st.columns([2,1])
+
+        IntFijoNac2=pd.pivot(IntFijoNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index()
+        html_table = IntFijoNac2.to_html(index=False)
+        #html_table = re.sub(r'<th>SEGMENTO<\/th>\s*', '', html_table)
+        #html_table = re.sub(r'<td>\s*<\/td>\s*', '', html_table)
+        styled_html = f'<div class="styled-table">{html_table}</div>'
+        
+        col1,col2=st.columns([1.5,1], gap="large")
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoNac,select_variable), use_column_width=True)
         with col2:
-            AgGrid(IntFijoNac[['PERIODO','SEGMENTO',select_variable]])
+            st.markdown(styled_html,unsafe_allow_html=True)
+            
 
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
