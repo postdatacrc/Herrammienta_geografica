@@ -65,7 +65,7 @@ Estilo_css="""<style type="text/css">
         margin-top:135px;
     }
     .e16nr0p31 {display:none}
-    .e1fqkh3o11 {width : 10%}
+    .css-2ewto4 {width : 10%}
     .css-y3whyl, .css-xqnn38 {background-color:#ccc}
     .e8zbici0 {display:none}
     .e8zbici2 {display:none} 
