@@ -176,6 +176,7 @@ Tabla_html=r"""<style>
     text-align: left;
 }
 .styled-table th,
+.styled-table th {resize:horizontal; overflow:auto;}
 .styled-table td {
     padding: 12px 15px;
 }
@@ -188,7 +189,11 @@ Tabla_html=r"""<style>
 .styled-table tbody tr:last-of-type {
     border-bottom: 2px solid #0593A2;
 }
-    </style> 
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1) {
+display: none;
+}
+</style> 
 """
 
 
@@ -224,39 +229,50 @@ DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
 
 fact_escala={'ACCESOS':1e6,'VALOR FACTURADO':1e9,'NÚMERO EMPRESAS':1}
 
+def orderOfMagnitude(number):
+    return math.floor(math.log(number, 10))
+
 def PlotlyBarrasSegmento(df,column):
     fig=make_subplots(rows=1,cols=1)
     factor_escalamiento=orderOfMagnitude(df[column].max())
     #mindf=df[column].min()/escalamiento-(df[column].min()/escalamiento)*0.3
     #maxdf=df[column].max()/escalamiento+(df[column].max()/escalamiento)*0.3 
     paleta_colores=["#0593A2","#FF7A48","#E3371E"]
-    SEG=df['SEGMENTO'].unique().tolist()
+    if column=='NÚMERO EMPRESAS':
+        SEG=df['SEGMENTO'].unique().tolist()
+    else:    
+        SEG=[x for x in df['SEGMENTO'].unique().tolist() if x!='Total']
     for i,segmento in enumerate(SEG):
         fig.add_trace(go.Bar(x=df[df['SEGMENTO']==segmento]['PERIODO'],
-                            y=df[df['SEGMENTO']==segmento][column]/fact_escala[column],name=segmento,marker_color=paleta_colores[i]))
+                            y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[i]))
     fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=column+' ', row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
     fig.update_layout(height=550,legend_title=None)
     fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
     title={
-    'text':None,
+    'text':"<b>"+select_variable.capitalize()+" ("+select_servicio+")</b>",
     'y':0.95,
     'x':0.5,
     'xanchor': 'center',
     'yanchor': 'top'})        
+    
     fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
     fig.update_layout(yaxis_tickformat ='d')
+    if column!='NÚMERO EMPRESAS':       
+        fig.update_layout(barmode='stack')   
+        fig.add_trace(go.Scatter(x=df[df['SEGMENTO']==segmento]['PERIODO'],y=df[df['SEGMENTO']=='Total'][column],
+                                 mode='text',text=df[df['SEGMENTO']=='Total'][column],textposition='top center',
+                    textfont=dict(color='black', size=14),name=None,showlegend=False))   
     fig.add_annotation(
     showarrow=False,
     text=None,
     font=dict(size=11), xref='x domain',x=0.5,yref='y domain',y=-0.4)      
     return fig
 
-def orderOfMagnitude(number):
-    return math.floor(math.log(number, 10))
+
 
 select_servicio=st.sidebar.selectbox('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'])
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
@@ -283,6 +299,7 @@ if select_servicio=='Internet Fijo':
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoNac,select_variable), use_column_width=True)
         with col2:
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
             st.markdown(styled_html,unsafe_allow_html=True)
             
 
