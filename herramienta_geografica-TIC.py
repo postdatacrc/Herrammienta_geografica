@@ -248,9 +248,9 @@ def PlotlyBarrasSegmento(df,column):
     factor_escalamiento=orderOfMagnitude(df[column].max())
     paleta_colores={'Residencial':"#FF7A48","Corporativo":"#0593A2","Total":"#E3371E"}
     if column=='NÚMERO EMPRESAS':
-        SEG=df['SEGMENTO'].unique().tolist()
+        SEG=["Residencial","Corporativo","Total"]
     else:    
-        SEG=[x for x in df['SEGMENTO'].unique().tolist() if x!='Total']
+        SEG=["Residencial","Corporativo"]
     for segmento in SEG:
         fig.add_trace(go.Bar(x=df[df['SEGMENTO']==segmento]['PERIODO'],
                             y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[segmento]))
@@ -277,7 +277,31 @@ def PlotlyBarrasSegmento(df,column):
                     textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
 
+def Nac_info(df):
+    dfNac=pd.concat([df.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfNac=dfNac.rename(columns=dict_variables)
+    dfNac2=pd.pivot(dfNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+    dfNac2_html = f'<div class="styled-table">{dfNac2.to_html(index=False)}</div>'
+    return dfNac, dfNac2_html 
 
+def Dep_info(df):
+    dfDep=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfDep=dfDep.rename(columns=dict_variables)
+    dfDep=dfDep[dfDep['CODIGO_DEPARTAMENTO']==select_dpto]
+    dfDep2=pd.pivot(dfDep[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+    dfDep2_html = f'<div class="styled-table">{dfDep2.to_html(index=False)}</div>'
+    return dfDep,dfDep2_html
+
+def Muni_info(df):
+    dfMUNI=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfMUNI=dfMUNI.rename(columns=dict_variables)
+    dfMUNI=dfMUNI[dfMUNI['CODIGO_MUNICIPIO']==select_muni]
+    dfMUNI2=pd.pivot(dfMUNI[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+    dfMUNI2_html = f'<div class="styled-table">{dfMUNI2.to_html(index=False)}</div>' 
+    return dfMUNI, dfMUNI2_html
 
 select_servicio=st.sidebar.selectbox('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'])
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
@@ -288,67 +312,113 @@ if select_servicio=='Internet Fijo':
     InternetFijo=FT1_3[FT1_3['SERVICIO_PAQUETE'].isin(['Triple Play (Telefonía fija + Internet fijo + TV por suscripción)',
        'Duo Play 1 (Telefonía fija + Internet fijo)',
        'Duo Play 2 (Internet fijo y TV por suscripción)', 'Internet fijo'])]
+    
     if select_ambito=='Nacional':
-        IntFijoNac=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-        InternetFijo.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
-        IntFijoNac=IntFijoNac.rename(columns=dict_variables)
-        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
-
-        IntFijoNac2=pd.pivot(IntFijoNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index()
-        IntFijoNac2_html = f'<div class="styled-table">{IntFijoNac2.to_html(index=False)}</div>'
-        
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
         col1,col2=st.columns([1.5,1], gap="large")
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(IntFijoNac,select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_column_width=True)
         with col2:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-            st.markdown(IntFijoNac2_html,unsafe_allow_html=True)
+            st.markdown(Nac_info(InternetFijo)[1],unsafe_allow_html=True)
             
-
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
-        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
-        
-        st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
-        IntFijoDep=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-        InternetFijo.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
-        IntFijoDep=IntFijoDep.rename(columns=dict_variables)
-        IntFijoDep=IntFijoDep[IntFijoDep['CODIGO_DEPARTAMENTO']==select_dpto]
-        IntFijoDep2=pd.pivot(IntFijoDep[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index()
-        IntFijoDep2_html = f'<div class="styled-table">{IntFijoDep2.to_html(index=False)}</div>'
-        
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
+        st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         col1,col2=st.columns([2,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(IntFijoDep,select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_column_width=True)
         with col2:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-            st.markdown(IntFijoDep2_html,unsafe_allow_html=True)
+            st.markdown(Dep_info(InternetFijo)[1],unsafe_allow_html=True)
         
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
-        st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
-        IntFijoMUNI=pd.concat([InternetFijo.groupby(['PERIODO', 'CODSEG','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-        InternetFijo.groupby(['PERIODO','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
-        IntFijoMUNI=IntFijoMUNI.rename(columns=dict_variables)
-        IntFijoMUNI=IntFijoMUNI[IntFijoMUNI['CODIGO_MUNICIPIO']==select_muni]
+        st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         col1,col2=st.columns([2,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(IntFijoMUNI,select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_column_width=True)
         with col2:
-            AgGrid(IntFijoMUNI[['PERIODO','SEGMENTO',select_variable]])
-
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
+            st.markdown(Muni_info(InternetFijo)[1],unsafe_allow_html=True)
         
 if select_servicio=='TV por suscripción':
     st.markdown(r"""<div class="titulo"><h2>Televisión por suscripción</h2></div>""",unsafe_allow_html=True)
     TVporSus=FT1_3[FT1_3['SERVICIO_PAQUETE'].isin(['Triple Play (Telefonía fija + Internet fijo + TV por suscripción)',
     'Duo Play 2 (Internet fijo y TV por suscripción)','Televisión por suscripción',
        'Duo Play 3 (Telefonía fija y TV por suscripción)'])]    
-    AgGrid(TVporSus.tail(5))   
+
+    if select_ambito=='Nacional':
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
+        col1,col2=st.columns([1.5,1], gap="large")
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(TVporSus)[0],select_variable), use_column_width=True)
+        with col2:
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
+            st.markdown(Nac_info(TVporSus)[1],unsafe_allow_html=True)
+
+    if select_ambito=='Departamental':
+        select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        
+        st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
+        col1,col2=st.columns([2,1])
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(TVporSus)[0],select_variable), use_column_width=True)
+        with col2:
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
+            st.markdown(Dep_info(TVporSus)[1],unsafe_allow_html=True)
+
+    if select_ambito=='Municipal':
+        select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
+        col1,col2=st.columns([2,1])
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(TVporSus)[0],select_variable), use_column_width=True)
+        with col2:
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
+            st.markdown(Muni_info(TVporSus)[1],unsafe_allow_html=True)
        
 if select_servicio=='Telefonía fija':
     st.markdown(r"""<div class="titulo"><h2>Telefonía fija</h2></div>""",unsafe_allow_html=True)
     Telfija=FT1_3[FT1_3['SERVICIO_PAQUETE'].isin(['Triple Play (Telefonía fija + Internet fijo + TV por suscripción)',
        'Duo Play 1 (Telefonía fija + Internet fijo)','Duo Play 3 (Telefonía fija y TV por suscripción)',
        'Telefonía fija'])]       
-    AgGrid(Telfija.tail(5))      
+   
+    if select_ambito=='Nacional':
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        col1,col2=st.columns([1.5,1], gap="large")
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(Telfija)[0],select_variable), use_column_width=True)
+        with col2:
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
+            st.markdown(Nac_info(Telfija)[1],unsafe_allow_html=True)   
+
+    if select_ambito=='Departamental':
+        select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
+        st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
+
+        col1,col2=st.columns([2,1])
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(Telfija)[0],select_variable), use_column_width=True)
+        with col2:
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
+            st.markdown(Dep_info(Telfija)[1],unsafe_allow_html=True)            
+            
+    if select_ambito=='Municipal':
+        select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
+        col1,col2=st.columns([2,1])
+        with col1:
+            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(Telfija)[0],select_variable), use_column_width=True)
+        with col2:
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
+            st.markdown(Muni_info(Telfija)[1],unsafe_allow_html=True)
+                
+
+                
