@@ -171,7 +171,7 @@ Barra_superior="""
 </div>"""
 Tabla_html=r"""<style> 
 .styled-table thead tr {
-    background-color: #0593A2;
+    background-color: #E3371E;
     color: #ffffff;
     text-align: left;
 }
@@ -187,7 +187,7 @@ Tabla_html=r"""<style>
     background-color: #f3f3f3;
 }
 .styled-table tbody tr:last-of-type {
-    border-bottom: 2px solid #0593A2;
+    border-bottom: 2px solid #E3371E;
 }
 .styled-table th:nth-child(1),
 .styled-table td:nth-child(1) {
@@ -229,23 +229,32 @@ DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
 
 fact_escala={'ACCESOS':1e6,'VALOR FACTURADO':1e9,'NÚMERO EMPRESAS':1}
 
+    
 def orderOfMagnitude(number):
     return math.floor(math.log(number, 10))
 
 def PlotlyBarrasSegmento(df,column):
     fig=make_subplots(rows=1,cols=1)
+    mean_val = df[column].mean()
+    if mean_val >= 1e9:
+        y_title = f"{column} (Miles de Millones)"
+        df[column] = round(df[column] / 1e9,2)
+    elif mean_val >= 1e6:
+        y_title = f"{column} (Millones)"
+        df[column] = round(df[column] / 1e6,2)
+    else:
+        y_title = f"{column}"
+    
     factor_escalamiento=orderOfMagnitude(df[column].max())
-    #mindf=df[column].min()/escalamiento-(df[column].min()/escalamiento)*0.3
-    #maxdf=df[column].max()/escalamiento+(df[column].max()/escalamiento)*0.3 
-    paleta_colores=["#0593A2","#FF7A48","#E3371E"]
+    paleta_colores={'Residencial':"#FF7A48","Corporativo":"#0593A2","Total":"#E3371E"}
     if column=='NÚMERO EMPRESAS':
         SEG=df['SEGMENTO'].unique().tolist()
     else:    
         SEG=[x for x in df['SEGMENTO'].unique().tolist() if x!='Total']
-    for i,segmento in enumerate(SEG):
+    for segmento in SEG:
         fig.add_trace(go.Bar(x=df[df['SEGMENTO']==segmento]['PERIODO'],
-                            y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[i]))
-    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=column+' ', row=1, col=1)                        
+                            y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[segmento]))
+    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
     fig.update_layout(height=550,legend_title=None)
@@ -265,11 +274,7 @@ def PlotlyBarrasSegmento(df,column):
         fig.update_layout(barmode='stack')   
         fig.add_trace(go.Scatter(x=df[df['SEGMENTO']==segmento]['PERIODO'],y=df[df['SEGMENTO']=='Total'][column],
                                  mode='text',text=df[df['SEGMENTO']=='Total'][column],textposition='top center',
-                    textfont=dict(color='black', size=14),name=None,showlegend=False))   
-    fig.add_annotation(
-    showarrow=False,
-    text=None,
-    font=dict(size=11), xref='x domain',x=0.5,yref='y domain',y=-0.4)      
+                    textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
 
 
@@ -290,17 +295,14 @@ if select_servicio=='Internet Fijo':
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
 
         IntFijoNac2=pd.pivot(IntFijoNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index()
-        html_table = IntFijoNac2.to_html(index=False)
-        #html_table = re.sub(r'<th>SEGMENTO<\/th>\s*', '', html_table)
-        #html_table = re.sub(r'<td>\s*<\/td>\s*', '', html_table)
-        styled_html = f'<div class="styled-table">{html_table}</div>'
+        IntFijoNac2_html = f'<div class="styled-table">{IntFijoNac2.to_html(index=False)}</div>'
         
         col1,col2=st.columns([1.5,1], gap="large")
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoNac,select_variable), use_column_width=True)
         with col2:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-            st.markdown(styled_html,unsafe_allow_html=True)
+            st.markdown(IntFijoNac2_html,unsafe_allow_html=True)
             
 
     if select_ambito=='Departamental':
@@ -312,11 +314,15 @@ if select_servicio=='Internet Fijo':
         InternetFijo.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         IntFijoDep=IntFijoDep.rename(columns=dict_variables)
         IntFijoDep=IntFijoDep[IntFijoDep['CODIGO_DEPARTAMENTO']==select_dpto]
+        IntFijoDep2=pd.pivot(IntFijoDep[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index()
+        IntFijoDep2_html = f'<div class="styled-table">{IntFijoDep2.to_html(index=False)}</div>'
+        
         col1,col2=st.columns([2,1])
         with col1:
             st.plotly_chart(PlotlyBarrasSegmento(IntFijoDep,select_variable), use_column_width=True)
         with col2:
-            AgGrid(IntFijoDep[['PERIODO','SEGMENTO',select_variable]])
+            st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
+            st.markdown(IntFijoDep2_html,unsafe_allow_html=True)
         
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
