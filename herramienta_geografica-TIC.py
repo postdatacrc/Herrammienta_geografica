@@ -277,6 +277,34 @@ def PlotlyBarrasSegmento(df,column):
                     textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
 
+def PlotlyBarrasEmpaquetados(df,column):
+    fig=make_subplots(rows=1,cols=1)
+
+    paleta_colores=["#CAA8F5", "#230C33", "#F5D05C", "#BF1363", "#F39273", "#5FBFAB", "#0E79B2"]
+    Servicios=df['SERVICIO_PAQUETE'].unique().tolist()
+    for i,servicio in enumerate(Servicios):
+        fig.add_trace(go.Bar(x=df[df['SERVICIO_PAQUETE']==servicio]['PERIODO'],
+                            y=df[df['SERVICIO_PAQUETE']==servicio][column],name=servicio,marker_color=paleta_colores[i]))
+    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=f"{column}", row=1, col=1)                        
+    fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
+    ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
+    fig.update_layout(height=550,legend_title=None)
+    fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+    title={
+    'text':"<b>"+select_variable.capitalize()+" ("+select_servicio+")</b>",
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top'})        
+    
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.2,font_size=11),showlegend=True)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
+    fig.update_layout(yaxis_tickformat ='d')      
+    fig.update_layout(barmode='stack')          
+    return fig
+
+
 def Nac_info(df):
     dfNac=pd.concat([df.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
@@ -421,4 +449,23 @@ if select_servicio=='Telefonía fija':
             st.markdown(Muni_info(Telfija)[1],unsafe_allow_html=True)
                 
 
-                
+if select_servicio=='Empaquetados':
+    st.markdown(r"""<div class="titulo"><h2>Empaquetados fijos</h2></div>""",unsafe_allow_html=True)
+    if select_ambito=='Nacional':
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        Empaquetados_Nac=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
+        Empaquetados_Nac=Empaquetados_Nac.rename(columns=dict_variables)
+        
+        col1,col2=st.columns([2,1])
+        with col1:
+            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Nac,select_variable),use_container_width=True)
+        Empaquetados_Nac2=pd.concat([FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        Empaquetados_Nac2=Empaquetados_Nac2.rename(columns=dict_variables)
+        Empaquetados_Nac3=pd.pivot(Empaquetados_Nac2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+        with col2:
+            select_servpaquete=st.selectbox('',Empaquetados_Nac3['SERVICIO_PAQUETE'].unique().tolist())
+            Empaquetados_Nac3=Empaquetados_Nac3[Empaquetados_Nac3['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+            Empaquetados_Nac3_html = f'<div class="styled-table">{Empaquetados_Nac3.to_html(index=False)}</div>'  
+            st.markdown(Empaquetados_Nac3_html,unsafe_allow_html=True) 
+                              
