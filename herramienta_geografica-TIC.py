@@ -139,7 +139,7 @@ def PlotlyBarrasEmpaquetados(df,column):
     'xanchor': 'center',
     'yanchor': 'top'})        
     
-    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.2,font_size=11),showlegend=True)
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.11,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
     fig.update_layout(yaxis_tickformat ='d')      
@@ -298,22 +298,22 @@ if select_servicio=='Empaquetados':
         st.markdown("<p>Duo play 1: Internet fijo + Telefonía fija</p>",unsafe_allow_html=True)
         st.markdown("<p>Duo play 2: Internet fijo + Televisión por suscripción</p>",unsafe_allow_html=True)
         st.markdown("<p>Duo play 3: Televisión por suscripción + Telefonía fija</p>",unsafe_allow_html=True)
-        
-        
     
+    dict_serv_empaq={'Duo Play 1 (Telefonía fija + Internet fijo)':'Duo Play 1','Duo Play 2 (Internet fijo y TV por suscripción)':'Duo Play 2', 'Duo Play 3 (Telefonía fija y TV por suscripción)':'Duo Play 3', 'Triple Play (Telefonía fija + Internet fijo + TV por suscripción)':'Triple play'}    
     if select_ambito=='Nacional':
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         Empaquetados_Nac=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Nac=Empaquetados_Nac.rename(columns=dict_variables)
+        Empaquetados_Nac['SERVICIO_PAQUETE']=Empaquetados_Nac['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
         
-        col1,col2=st.columns([2,1])
+        col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Nac,select_variable),use_container_width=True)
         Empaquetados_Nac2=pd.concat([FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
         FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         Empaquetados_Nac2=Empaquetados_Nac2.rename(columns=dict_variables)
         Empaquetados_Nac3=pd.pivot(Empaquetados_Nac2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
-        with col2:
+        with col3:
             select_servpaquete=st.selectbox('',Empaquetados_Nac3['SERVICIO_PAQUETE'].unique().tolist())
             Empaquetados_Nac3=Empaquetados_Nac3[Empaquetados_Nac3['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
             Empaquetados_Nac3_html = f'<div class="styled-table">{Empaquetados_Nac3.to_html(index=False)}</div>'  
