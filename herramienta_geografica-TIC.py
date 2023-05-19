@@ -323,6 +323,7 @@ if select_servicio=='Empaquetados':
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
         Empaquetados_Dep=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Dep=Empaquetados_Dep.rename(columns=dict_variables)
         Empaquetados_Dep['SERVICIO_PAQUETE']=Empaquetados_Dep['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
@@ -345,6 +346,7 @@ if select_servicio=='Empaquetados':
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
+        st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
         Empaquetados_Mun=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Mun=Empaquetados_Mun.rename(columns=dict_variables)
         Empaquetados_Mun['SERVICIO_PAQUETE']=Empaquetados_Mun['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
