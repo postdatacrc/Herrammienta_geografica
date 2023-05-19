@@ -1,0 +1,157 @@
+/*Estilo general aplicación*/
+@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap'); 
+
+html, body, [class*="css"] ,[class*="st-ae"]{
+    font-family: 'Poppins', serif; 
+}  
+[data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
+    width: 250px;}
+[data-testid="stSidebar"][aria-expanded="false"] > div:first-child {
+    width: 250px;
+    top:100px;
+    margin-left: -300px;}
+h1{ background: #f42e62;
+    text-align: center;
+    padding: 15px;
+    font-family: Poppins;
+    font-size:1.60rem;
+    color: white;
+    position:fixed;
+    width:100%;
+    z-index:9999999;
+    top:80px;
+    left:0;
+}
+.barra-superior{top: 0;
+    position: fixed;
+    background-color: #2e297b;
+    width: 100%;
+    color:white;
+    z-index: 999;
+    height: 80px;
+    left: 0px;
+    text-align: center;
+    padding: 0px;
+    font-size: 36px;
+    font-weight: 700;
+}
+.css-1wrcr25{
+    margin-top:135px;
+}
+.e16nr0p31 {display:none}
+.css-2ewto4 {width : 10%}
+.css-y3whyl, .css-xqnn38 {background-color:#ccc}
+.e8zbici0 {display:none}
+.e8zbici2 {display:none} 
+.e19lei0e1 {display:none}
+.css-1uvyptr:hover,.css-1uvyptr {background: #ccc}
+.e1tzin5v2 {
+    display:flex;
+    align-items:center;
+}
+.e1fqkh3o2{
+    padding-top:2.5rem;   
+}
+.css-52bwht{
+    gap:0.01rem;
+}
+.block-container {
+    padding-top:0;
+    } 
+.main > div {
+    padding-left:30px;
+    padding-right:30px;
+}        
+h2{
+    background: #fffdf7;
+    text-align: center;
+    padding: 10px;
+    color: #f42e62;
+    font-weight: bold;
+}    
+h6{
+    background: #fffdf7;
+    color: #7a44f2;
+    font-weight: bold;
+}        
+.titulo {
+    background: #fffdf7;
+    display: flex;
+    color: #f42e62;
+    font-size:25px;
+    padding:10px;
+    text-align:center;
+}
+.titulo:before,
+.titulo:after {
+    content: '';
+    margin: auto 1em;
+    border-bottom: solid 3px;
+    flex: 1;
+}   
+.stButton{
+    text-align:center;
+}
+.edgvbvh9:hover {
+    color:rgb(255,255,255);
+    border-color:rgb(255,75,75);
+}
+.edgvbvh9 {
+    font-weight: 600;
+    background-color: rgb(215,235,252);
+    border: 0px solid rgba(0, 0, 0, 1); 
+    color:black;
+    padding: 0.6rem 0.6rem;
+    font-size: 16px;
+}
+.imagen-flotar{float:left;}
+@media (max-width:1230px){
+    .barra-superior{height:160px;} 
+    .main, .e1fqkh3o9 > div{margin-top:215px;}
+    .imagen-flotar{float:none}
+    h1{top:160px;}}       
+.IconoTitulo img {
+    margin-right:10px;
+}
+.IconoTitulo{
+    text-align:center;
+}
+.IconoTitulo h4, .IconoTitulo img {
+    display:inline-block;
+    vertical-align:middle;
+}    
+.css-17m3m1o{text-align:left}
+.st-b4 {display: inline-flex}
+.stRadio{text-align:center}
+ul {
+    list-style-type: square;
+    text-align:left;
+}      
+mark.title {
+    color:#7a44f2;
+    background:none;
+}
+/*Diseño para tablas*/
+.styled-table thead tr {
+    background-color: #2e297b;
+    color: #ffffff;
+    text-align: left;
+}
+.styled-table th,
+.styled-table th {resize:horizontal; overflow:auto;}
+.styled-table td {
+    padding: 12px 15px;
+}
+.styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+.styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+.styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #2e297b;
+}
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1) {
+display: none;
+}
