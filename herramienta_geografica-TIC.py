@@ -36,12 +36,12 @@ Estilo_css="""<style type="text/css">
         width: 250px;
         top:100px;
         margin-left: -300px;}
-    h1{ background: rgb(215,235,252);
+    h1{ background: #f42e62;
         text-align: center;
         padding: 15px;
         font-family: Poppins;
         font-size:1.60rem;
-        color: black;
+        color: white;
         position:fixed;
         width:100%;
         z-index:9999999;
@@ -50,7 +50,7 @@ Estilo_css="""<style type="text/css">
     }
     .barra-superior{top: 0;
         position: fixed;
-        background-color: #7a44f2;
+        background-color: #2e297b;
         width: 100%;
         color:white;
         z-index: 999;
@@ -92,7 +92,7 @@ Estilo_css="""<style type="text/css">
         background: #fffdf7;
         text-align: center;
         padding: 10px;
-        color: #7a44f2;
+        color: #f42e62;
         font-weight: bold;
     }    
     h6{
@@ -103,7 +103,7 @@ Estilo_css="""<style type="text/css">
     .titulo {
       background: #fffdf7;
       display: flex;
-      color: #7a44f2;
+      color: #f42e62;
       font-size:25px;
       padding:10px;
       text-align:center;
@@ -171,7 +171,7 @@ Barra_superior="""
 </div>"""
 Tabla_html=r"""<style> 
 .styled-table thead tr {
-    background-color: #E3371E;
+    background-color: #2e297b;
     color: #ffffff;
     text-align: left;
 }
@@ -187,7 +187,7 @@ Tabla_html=r"""<style>
     background-color: #f3f3f3;
 }
 .styled-table tbody tr:last-of-type {
-    border-bottom: 2px solid #E3371E;
+    border-bottom: 2px solid #2e297b;
 }
 .styled-table th:nth-child(1),
 .styled-table td:nth-child(1) {
@@ -229,9 +229,6 @@ DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
 
 fact_escala={'ACCESOS':1e6,'VALOR FACTURADO':1e9,'NÚMERO EMPRESAS':1}
 
-    
-def orderOfMagnitude(number):
-    return math.floor(math.log(number, 10))
 
 def PlotlyBarrasSegmento(df,column):
     fig=make_subplots(rows=1,cols=1)
@@ -244,8 +241,7 @@ def PlotlyBarrasSegmento(df,column):
         df[column] = round(df[column] / 1e6,2)
     else:
         y_title = f"{column}"
-    
-    factor_escalamiento=orderOfMagnitude(df[column].max())
+
     paleta_colores={'Residencial':"#FF7A48","Corporativo":"#0593A2","Total":"#E3371E"}
     if column=='NÚMERO EMPRESAS':
         SEG=["Residencial","Corporativo","Total"]
@@ -253,7 +249,8 @@ def PlotlyBarrasSegmento(df,column):
         SEG=["Residencial","Corporativo"]
     for segmento in SEG:
         fig.add_trace(go.Bar(x=df[df['SEGMENTO']==segmento]['PERIODO'],
-                            y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[segmento]))
+                            y=df[df['SEGMENTO']==segmento][column],name=segmento,marker_color=paleta_colores[segmento],
+                            hovertemplate='%{y:.2f}'))
     fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
