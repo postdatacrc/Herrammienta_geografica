@@ -126,8 +126,9 @@ def PlotlyBarrasEmpaquetados(df,column):
     Servicios=df['SERVICIO_PAQUETE'].unique().tolist()
     for i,servicio in enumerate(Servicios):
         fig.add_trace(go.Bar(x=df[df['SERVICIO_PAQUETE']==servicio]['PERIODO'],
-                            y=df[df['SERVICIO_PAQUETE']==servicio][column],name=servicio,marker_color=paleta_colores[i]))
-    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=f"{column}", row=1, col=1)                        
+                            y=df[df['SERVICIO_PAQUETE']==servicio][column],name=servicio,marker_color=paleta_colores[i],
+                            hovertemplate='%{y:.2f}'))
+    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
     fig.update_layout(height=550,legend_title=None)
@@ -139,7 +140,7 @@ def PlotlyBarrasEmpaquetados(df,column):
     'xanchor': 'center',
     'yanchor': 'top'})        
     
-    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.11,x=0.5,font_size=11),showlegend=True)
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.15,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
     fig.update_layout(yaxis_tickformat ='d')      
