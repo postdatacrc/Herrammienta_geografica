@@ -131,16 +131,18 @@ mark.title {
     color:#7a44f2;
     background:none;
 }
-/*Diseño para tablas*/
+
+/*#######################Diseño para tablas###########################3*/
 .styled-table thead tr {
     background-color: #2e297b;
     color: #ffffff;
     text-align: left;
 }
 .styled-table th,
-.styled-table th {resize:horizontal; overflow:auto;}
 .styled-table td {
     padding: 12px 15px;
+    width: 100%;
+    text-align: center;
 }
 .styled-table tbody tr {
     border-bottom: 1px solid #dddddd;
