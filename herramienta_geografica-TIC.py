@@ -125,11 +125,13 @@ def PlotlyBarrasEmpaquetados(df,column):
         df2[column] = round(df2[column] / 1e6,2)
     else:
         y_title = f"{column}"
-    paleta_colores=["#CAA8F5", "#230C33", "#F5D05C", "#BF1363", "#F39273", "#5FBFAB", "#0E79B2"]
+    paleta_colores=["#F5D05C", "#230C33","#BF1363","#CAA8F5", "#F39273", "#5FBFAB", "#0E79B2"]
     Servicios=df['SERVICIO_PAQUETE'].unique().tolist()
-    for i,servicio in enumerate(Servicios):
+    colores_empaquetados={'Duo Play 1': '#F5D05C', 'Duo Play 3': '#230C33', 'Internet fijo': '#BF1363', 'Telefonía fija': '#CAA8F5', 'Televisión por suscripción': '#F39273', 'Triple play': '#5FBFAB', 'Duo Play 2': '#0E79B2'}
+    
+    for servicio in Servicios:
         fig.add_trace(go.Bar(x=df[df['SERVICIO_PAQUETE']==servicio]['PERIODO'],
-                            y=df[df['SERVICIO_PAQUETE']==servicio][column],name=servicio,marker_color=paleta_colores[i],
+                            y=df[df['SERVICIO_PAQUETE']==servicio][column],name=servicio,marker_color=colores_empaquetados[servicio],
                             hovertemplate='%{y:.2f}'))
     fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
@@ -325,8 +327,6 @@ if select_servicio=='Empaquetados':
             Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
             Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
             st.markdown(Empaquetados_Nac2_html,unsafe_allow_html=True) 
-        
-        AgGrid(Empaquetados_Nac)
             
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
