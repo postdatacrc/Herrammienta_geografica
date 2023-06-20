@@ -112,14 +112,17 @@ def PlotlyBarrasSegmento(df,column):
     return fig
 
 def PlotlyBarrasEmpaquetados(df,column):
+    df2=df.groupby(['PERIODO'])[column].sum().reset_index()
     fig=make_subplots(rows=1,cols=1)
     mean_val = df[column].mean()
     if mean_val >= 1e9:
         y_title = f"{column} (Miles de Millones)"
         df[column] = round(df[column] / 1e9,2)
+        df2[column] = round(df2[column] / 1e9,2)
     elif mean_val >= 1e6:
         y_title = f"{column} (Millones)"
         df[column] = round(df[column] / 1e6,2)
+        df2[column] = round(df2[column] / 1e6,2)
     else:
         y_title = f"{column}"
     paleta_colores=["#CAA8F5", "#230C33", "#F5D05C", "#BF1363", "#F39273", "#5FBFAB", "#0E79B2"]
@@ -144,7 +147,10 @@ def PlotlyBarrasEmpaquetados(df,column):
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
     fig.update_layout(yaxis_tickformat ='d')      
-    fig.update_layout(barmode='stack')          
+    fig.update_layout(barmode='stack')     
+    fig.add_trace(go.Scatter(x=df2['PERIODO'],y=df2[column],
+                                mode='text',text=df2[column],textposition='top center',
+                textfont=dict(color='black', size=14),name=None,showlegend=False))           
     return fig
 
 
@@ -319,6 +325,8 @@ if select_servicio=='Empaquetados':
             Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
             Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
             st.markdown(Empaquetados_Nac2_html,unsafe_allow_html=True) 
+        
+        AgGrid(Empaquetados_Nac)
             
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
@@ -334,6 +342,8 @@ if select_servicio=='Empaquetados':
         Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['CODIGO_DEPARTAMENTO']==select_dpto]
         Empaquetados_Dep2=pd.pivot(Empaquetados_Dep2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
+
+        
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Dep,select_variable),use_container_width=True)
