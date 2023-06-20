@@ -186,9 +186,9 @@ if select_servicio=='Internet Fijo':
     
     if select_ambito=='Nacional':
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
-        col1,col2,col3=st.columns([1.2,0.1,1])
+        col1,col2,col3=st.columns([1.5,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
             st.markdown(Nac_info(InternetFijo)[1],unsafe_allow_html=True)
@@ -199,7 +199,7 @@ if select_servicio=='Internet Fijo':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
             st.markdown(Dep_info(InternetFijo)[1],unsafe_allow_html=True)
@@ -210,7 +210,7 @@ if select_servicio=='Internet Fijo':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
             st.markdown(Muni_info(InternetFijo)[1],unsafe_allow_html=True)
@@ -225,7 +225,7 @@ if select_servicio=='TV por suscripción':
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(TVporSus)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(TVporSus)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
             st.markdown(Nac_info(TVporSus)[1],unsafe_allow_html=True)
@@ -237,7 +237,7 @@ if select_servicio=='TV por suscripción':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(TVporSus)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(TVporSus)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
             st.markdown(Dep_info(TVporSus)[1],unsafe_allow_html=True)
@@ -248,7 +248,7 @@ if select_servicio=='TV por suscripción':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(TVporSus)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(TVporSus)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
             st.markdown(Muni_info(TVporSus)[1],unsafe_allow_html=True)
@@ -263,7 +263,7 @@ if select_servicio=='Telefonía fija':
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(Telfija)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Nac_info(Telfija)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
             st.markdown(Nac_info(Telfija)[1],unsafe_allow_html=True)   
@@ -275,7 +275,7 @@ if select_servicio=='Telefonía fija':
 
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(Telfija)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Dep_info(Telfija)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
             st.markdown(Dep_info(Telfija)[1],unsafe_allow_html=True)            
@@ -286,7 +286,7 @@ if select_servicio=='Telefonía fija':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         col1,col2,col3=st.columns([1.2,0.1,1])
         with col1:
-            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(Telfija)[0],select_variable), use_column_width=True)
+            st.plotly_chart(PlotlyBarrasSegmento(Muni_info(Telfija)[0],select_variable), use_container_width=True)
         with col3:
             st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
             st.markdown(Muni_info(Telfija)[1],unsafe_allow_html=True)
