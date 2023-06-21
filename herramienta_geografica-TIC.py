@@ -102,12 +102,12 @@ def PlotlyBarrasSegmento(df,column):
     
     fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
-    fig.update_layout(yaxis_tickformat ='d')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickformat=',d')
+    fig.update_layout(yaxis_tickformat = '0,.0f')
     if column!='NÚMERO EMPRESAS':       
         fig.update_layout(barmode='stack')   
-        fig.add_trace(go.Scatter(x=df[df['SEGMENTO']==segmento]['PERIODO'],y=df[df['SEGMENTO']=='Total'][column],
-                                 mode='text',text=df[df['SEGMENTO']=='Total'][column],textposition='top center',
+        fig.add_trace(go.Scatter(x=df[df['SEGMENTO']==segmento]['PERIODO'],y=df[df['SEGMENTO']=='Total'][column].map('{:,.0f}'.format),
+                                 mode='text',text=df[df['SEGMENTO']=='Total'][column].map('{:,.2f}'.format),textposition='top center',
                     textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
 
@@ -144,17 +144,31 @@ def PlotlyBarrasEmpaquetados(df,column):
     'x':0.5,
     'xanchor': 'center',
     'yanchor': 'top'})        
-    
     fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
-    fig.update_layout(yaxis_tickformat ='d')      
+    fig.update_layout(yaxis_tickformat = '0,.0f')      
     fig.update_layout(barmode='stack')     
     fig.add_trace(go.Scatter(x=df2['PERIODO'],y=df2[column],
-                                mode='text',text=df2[column],textposition='top center',
+                                mode='text',text=df2[column].map('{:,.2f}'.format),textposition='top center',
                 textfont=dict(color='black', size=14),name=None,showlegend=False))           
     return fig
 
+def PlotlyTable(df,title):
+    for cols in [x for x in df.columns if x!='PERIODO']:
+        df[cols]=df[cols].astype(float).map('{:,.0f}'.format)
+    table = go.Table(columnwidth=[300,500,500,500],header=dict(values="<b>"+df.columns+"</b>",
+                                 fill_color='#2e297b',
+                align='center',font=dict(color='white', size=15, family='Tahoma'),height=50),
+                 cells=dict(values=[df[col] for col in df.columns],
+                            fill_color=[["#fffdf7","Silver"]*4],
+               align='center',font=dict(color='black', size=15, family='Tahoma'),height=30))
+    fig=go.Figure(data=[table])
+    fig.update_layout(height=500)
+    fig.update_layout(title =  "<b>"+title+"</b> ", 
+                   font_color = 'black', font_family='Tahoma', 
+                   title_font_size = 20, title_x = 0.5) 
+    return fig
 
 def Nac_info(df):
     dfNac=pd.concat([df.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -162,7 +176,7 @@ def Nac_info(df):
     dfNac=dfNac.rename(columns=dict_variables)
     dfNac2=pd.pivot(dfNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     dfNac2_html = f'<div class="styled-table">{dfNac2.to_html(index=False)}</div>'
-    return dfNac, dfNac2_html 
+    return dfNac, dfNac2
 
 def Dep_info(df):
     dfDep=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -171,7 +185,7 @@ def Dep_info(df):
     dfDep=dfDep[dfDep['CODIGO_DEPARTAMENTO']==select_dpto]
     dfDep2=pd.pivot(dfDep[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     dfDep2_html = f'<div class="styled-table">{dfDep2.to_html(index=False)}</div>'
-    return dfDep,dfDep2_html
+    return dfDep,dfDep2
 
 def Muni_info(df):
     dfMUNI=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -180,7 +194,7 @@ def Muni_info(df):
     dfMUNI=dfMUNI[dfMUNI['CODIGO_MUNICIPIO']==select_muni]
     dfMUNI2=pd.pivot(dfMUNI[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     dfMUNI2_html = f'<div class="styled-table">{dfMUNI2.to_html(index=False)}</div>' 
-    return dfMUNI, dfMUNI2_html
+    return dfMUNI, dfMUNI2
 
 select_servicio=st.sidebar.selectbox('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'])
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
@@ -198,10 +212,10 @@ if select_servicio=='Internet Fijo':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
+            col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-                st.markdown(Nac_info(InternetFijo)[1],unsafe_allow_html=True)
+                st.plotly_chart(PlotlyTable(Nac_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
+                
             
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
@@ -211,10 +225,9 @@ if select_servicio=='Internet Fijo':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
+            col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-                st.markdown(Dep_info(InternetFijo)[1],unsafe_allow_html=True)
+                st.plotly_chart(PlotlyTable(Dep_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
         
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
@@ -224,10 +237,9 @@ if select_servicio=='Internet Fijo':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
+            col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:            
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-                st.markdown(Muni_info(InternetFijo)[1],unsafe_allow_html=True)
+                st.plotly_chart(PlotlyTable(Muni_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
         
 if select_servicio=='TV por suscripción':
     st.markdown(r"""<div class="titulo"><h2>Televisión por suscripción</h2></div>""",unsafe_allow_html=True)
@@ -241,10 +253,9 @@ if select_servicio=='TV por suscripción':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
-            with col2:                        
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
-                st.markdown(Nac_info(TVporSus)[1],unsafe_allow_html=True)
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Nac_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
 
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
@@ -255,10 +266,9 @@ if select_servicio=='TV por suscripción':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
-            with col2:                              
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
-                st.markdown(Dep_info(TVporSus)[1],unsafe_allow_html=True)
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Dep_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
 
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
@@ -268,10 +278,9 @@ if select_servicio=='TV por suscripción':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
-            with col2:                 
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
-                st.markdown(Muni_info(TVporSus)[1],unsafe_allow_html=True)
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Muni_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
        
 if select_servicio=='Telefonía fija':
     st.markdown(r"""<div class="titulo"><h2>Telefonía fija</h2></div>""",unsafe_allow_html=True)
@@ -285,10 +294,9 @@ if select_servicio=='Telefonía fija':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
-            with col2:                
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
-                st.markdown(Nac_info(Telfija)[1],unsafe_allow_html=True)   
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Nac_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)
 
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
@@ -299,10 +307,9 @@ if select_servicio=='Telefonía fija':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
-            with col2:                  
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
-                st.markdown(Dep_info(Telfija)[1],unsafe_allow_html=True)            
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Dep_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)           
             
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
@@ -312,10 +319,9 @@ if select_servicio=='Telefonía fija':
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
-            with col2:                  
-                st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
-                st.markdown(Muni_info(Telfija)[1],unsafe_allow_html=True)
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Muni_info(Telfija)[1],select_variable.capitalize()),use_container_width=True) 
                 
 if select_servicio=='Empaquetados':
     st.markdown(r"""<div class="titulo"><h2>Empaquetados fijos</h2></div>""",unsafe_allow_html=True)
@@ -341,12 +347,13 @@ if select_servicio=='Empaquetados':
         with tab1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Nac,select_variable),use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
+            col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:              
                 select_servpaquete=st.selectbox('',Empaquetados_Nac2['SERVICIO_PAQUETE'].unique().tolist())
                 Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
                 Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
-                st.markdown(Empaquetados_Nac2_html,unsafe_allow_html=True) 
+                st.plotly_chart(PlotlyTable(Empaquetados_Nac2,select_variable.capitalize()),use_container_width=True) 
+                 
             
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
@@ -366,12 +373,13 @@ if select_servicio=='Empaquetados':
         with tab1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Dep,select_variable),use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
+            col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:               
                 select_servpaquete=st.selectbox('',Empaquetados_Dep2['SERVICIO_PAQUETE'].unique().tolist())
                 Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
                 Empaquetados_Dep2_html = f'<div class="styled-table">{Empaquetados_Dep2.to_html(index=False)}</div>'  
-                st.markdown(Empaquetados_Dep2_html,unsafe_allow_html=True)             
+                st.plotly_chart(PlotlyTable(Empaquetados_Dep2,select_variable.capitalize()),use_container_width=True)
+                            
             
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)
@@ -391,9 +399,10 @@ if select_servicio=='Empaquetados':
         with tab1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Mun,select_variable),use_container_width=True)
         with tab2:
-            col1,col2,col3=st.columns(3)
+            col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:            
                 select_servpaquete=st.selectbox('',Empaquetados_Mun2['SERVICIO_PAQUETE'].unique().tolist())
                 Empaquetados_Mun2=Empaquetados_Mun2[Empaquetados_Mun2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
                 Empaquetados_Mun2_html = f'<div class="styled-table">{Empaquetados_Mun2.to_html(index=False)}</div>'  
-                st.markdown(Empaquetados_Mun2_html,unsafe_allow_html=True)                                 
+                st.plotly_chart(PlotlyTable(Empaquetados_Mun2,select_variable.capitalize()),use_container_width=True)
+                                               
