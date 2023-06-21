@@ -145,7 +145,7 @@ def PlotlyBarrasEmpaquetados(df,column):
     'xanchor': 'center',
     'yanchor': 'top'})        
     
-    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.16,x=0.5,font_size=11),showlegend=True)
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
     fig.update_layout(yaxis_tickformat ='d')      
@@ -193,35 +193,41 @@ if select_servicio=='Internet Fijo':
        'Duo Play 2 (Internet fijo y TV por suscripción)', 'Internet fijo'])]
     
     if select_ambito=='Nacional':
-        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
-        col1,col2,col3=st.columns([1.5,0.1,1])
-        with col1:
+        select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])     
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-            st.markdown(Nac_info(InternetFijo)[1],unsafe_allow_html=True)
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
+                st.markdown(Nac_info(InternetFijo)[1],unsafe_allow_html=True)
             
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-            st.markdown(Dep_info(InternetFijo)[1],unsafe_allow_html=True)
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
+                st.markdown(Dep_info(InternetFijo)[1],unsafe_allow_html=True)
         
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
-            st.markdown(Muni_info(InternetFijo)[1],unsafe_allow_html=True)
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:            
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Internet fijo)</b></center>",unsafe_allow_html=True)
+                st.markdown(Muni_info(InternetFijo)[1],unsafe_allow_html=True)
         
 if select_servicio=='TV por suscripción':
     st.markdown(r"""<div class="titulo"><h2>Televisión por suscripción</h2></div>""",unsafe_allow_html=True)
@@ -231,35 +237,41 @@ if select_servicio=='TV por suscripción':
 
     if select_ambito=='Nacional':
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(TVporSus)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
-            st.markdown(Nac_info(TVporSus)[1],unsafe_allow_html=True)
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:                        
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
+                st.markdown(Nac_info(TVporSus)[1],unsafe_allow_html=True)
 
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(TVporSus)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
-            st.markdown(Dep_info(TVporSus)[1],unsafe_allow_html=True)
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:                              
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
+                st.markdown(Dep_info(TVporSus)[1],unsafe_allow_html=True)
 
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(TVporSus)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
-            st.markdown(Muni_info(TVporSus)[1],unsafe_allow_html=True)
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:                 
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Televisión por suscripción)</b></center>",unsafe_allow_html=True)
+                st.markdown(Muni_info(TVporSus)[1],unsafe_allow_html=True)
        
 if select_servicio=='Telefonía fija':
     st.markdown(r"""<div class="titulo"><h2>Telefonía fija</h2></div>""",unsafe_allow_html=True)
@@ -269,35 +281,41 @@ if select_servicio=='Telefonía fija':
    
     if select_ambito=='Nacional':
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(Telfija)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
-            st.markdown(Nac_info(Telfija)[1],unsafe_allow_html=True)   
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:                
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
+                st.markdown(Nac_info(Telfija)[1],unsafe_allow_html=True)   
 
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])        
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
 
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(Telfija)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
-            st.markdown(Dep_info(Telfija)[1],unsafe_allow_html=True)            
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:                  
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
+                st.markdown(Dep_info(Telfija)[1],unsafe_allow_html=True)            
             
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)        
         select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS'])
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(Telfija)[0],select_variable), use_container_width=True)
-        with col3:
-            st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
-            st.markdown(Muni_info(Telfija)[1],unsafe_allow_html=True)
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:                  
+                st.markdown("<center><b>"+select_variable.capitalize()+" (Telefonía fija)</b></center>",unsafe_allow_html=True)
+                st.markdown(Muni_info(Telfija)[1],unsafe_allow_html=True)
                 
 if select_servicio=='Empaquetados':
     st.markdown(r"""<div class="titulo"><h2>Empaquetados fijos</h2></div>""",unsafe_allow_html=True)
@@ -319,14 +337,16 @@ if select_servicio=='Empaquetados':
         Empaquetados_Nac2=Empaquetados_Nac2.rename(columns=dict_variables)
         Empaquetados_Nac2=pd.pivot(Empaquetados_Nac2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Nac,select_variable),use_container_width=True)
-        with col3:
-            select_servpaquete=st.selectbox('',Empaquetados_Nac2['SERVICIO_PAQUETE'].unique().tolist())
-            Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
-            Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
-            st.markdown(Empaquetados_Nac2_html,unsafe_allow_html=True) 
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:              
+                select_servpaquete=st.selectbox('',Empaquetados_Nac2['SERVICIO_PAQUETE'].unique().tolist())
+                Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
+                st.markdown(Empaquetados_Nac2_html,unsafe_allow_html=True) 
             
     if select_ambito=='Departamental':
         select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
@@ -342,16 +362,16 @@ if select_servicio=='Empaquetados':
         Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['CODIGO_DEPARTAMENTO']==select_dpto]
         Empaquetados_Dep2=pd.pivot(Empaquetados_Dep2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
-
-        
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Dep,select_variable),use_container_width=True)
-        with col3:
-            select_servpaquete=st.selectbox('',Empaquetados_Dep2['SERVICIO_PAQUETE'].unique().tolist())
-            Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
-            Empaquetados_Dep2_html = f'<div class="styled-table">{Empaquetados_Dep2.to_html(index=False)}</div>'  
-            st.markdown(Empaquetados_Dep2_html,unsafe_allow_html=True)             
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:               
+                select_servpaquete=st.selectbox('',Empaquetados_Dep2['SERVICIO_PAQUETE'].unique().tolist())
+                Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Dep2_html = f'<div class="styled-table">{Empaquetados_Dep2.to_html(index=False)}</div>'  
+                st.markdown(Empaquetados_Dep2_html,unsafe_allow_html=True)             
             
     if select_ambito=='Municipal':
         select_muni=st.sidebar.selectbox('Municipio',MUNICIPIOS)
@@ -367,11 +387,13 @@ if select_servicio=='Empaquetados':
         Empaquetados_Mun2=Empaquetados_Mun2[Empaquetados_Mun2['CODIGO_MUNICIPIO']==select_muni]
         Empaquetados_Mun2=pd.pivot(Empaquetados_Mun2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
-        col1,col2,col3=st.columns([1.2,0.1,1])
-        with col1:
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Mun,select_variable),use_container_width=True)
-        with col3:
-            select_servpaquete=st.selectbox('',Empaquetados_Mun2['SERVICIO_PAQUETE'].unique().tolist())
-            Empaquetados_Mun2=Empaquetados_Mun2[Empaquetados_Mun2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
-            Empaquetados_Mun2_html = f'<div class="styled-table">{Empaquetados_Mun2.to_html(index=False)}</div>'  
-            st.markdown(Empaquetados_Mun2_html,unsafe_allow_html=True)                                 
+        with tab2:
+            col1,col2,col3=st.columns(3)
+            with col2:            
+                select_servpaquete=st.selectbox('',Empaquetados_Mun2['SERVICIO_PAQUETE'].unique().tolist())
+                Empaquetados_Mun2=Empaquetados_Mun2[Empaquetados_Mun2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Mun2_html = f'<div class="styled-table">{Empaquetados_Mun2.to_html(index=False)}</div>'  
+                st.markdown(Empaquetados_Mun2_html,unsafe_allow_html=True)                                 
