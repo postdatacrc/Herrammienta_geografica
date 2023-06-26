@@ -6,5 +6,4 @@ textColor = "#000000"
 font = "Tahoma"
 [server]
 enableCORS = true
-[server]
 fileWatcherType = "poll"
