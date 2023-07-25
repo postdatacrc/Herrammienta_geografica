@@ -121,6 +121,7 @@ h6{
     vertical-align:middle;
 }    
 .css-17m3m1o{text-align:left}
+.css-ocqkz7{text-align:center}
 .st-b4 {display: inline-flex}
 .stRadio{text-align:center}
 ul {
@@ -133,27 +134,38 @@ mark.title {
 }
 
 /*#######################Diseño para tablas###########################3*/
-.styled-table thead tr {
+.styled-table {
+    width: 100%;
+    table-layout: fixed;
+    margin: 0 auto;
+  }
+  
+  .styled-table thead tr {
     background-color: #2e297b;
     color: #ffffff;
     text-align: left;
-}
-.styled-table th,
-.styled-table td {
+  }
+  
+  .styled-table th,
+  .styled-table td {
     padding: 12px 15px;
-    width: 100%;
     text-align: center;
-}
-.styled-table tbody tr {
+  }
+  
+  .styled-table tbody tr {
     border-bottom: 1px solid #dddddd;
-}
-.styled-table tbody tr:nth-of-type(even) {
+  }
+  
+  .styled-table tbody tr:nth-of-type(even) {
     background-color: #f3f3f3;
-}
-.styled-table tbody tr:last-of-type {
+  }
+  
+  .styled-table tbody tr:last-of-type {
     border-bottom: 2px solid #2e297b;
-}
-.styled-table th:nth-child(1),
-.styled-table td:nth-child(1) {
-display: none;
-}
+  }
+  
+  .styled-table th:nth-child(1),
+  .styled-table td:nth-child(1) {
+    display: none;
+  }
+  
