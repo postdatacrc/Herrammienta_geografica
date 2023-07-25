@@ -59,11 +59,29 @@ def T13(allow_output_mutation=True):
     FT_13['CODIGO_MUNICIPIO']=FT_13['MUNICIPIO']+'-'+FT_13['ID_MUNICIPIO'].astype('str')
     FT_13['PERIODO']=FT_13['ANNO'].astype('str')+'-T'+FT_13['TRIMESTRE'].astype('str')
     FT_13['CODSEG']=np.where(FT_13['ID_SEGMENTO'].isin([101,102,103,104,105,106]),'Residencial','Corporativo')
+
+    dict_regiones = {
+        'REGIÓN ANDINA': [5, 11, 15, 17, 25, 41, 54, 63, 66, 68, 73],
+        'REGIÓN AMAZÓNICA': [91, 18, 94, 95, 86, 97],
+        'REGIÓN PACÍFICA': [76, 27, 19, 52],
+        'REGIÓN CARIBE': [8, 13, 20, 23, 44, 47, 70, 88],
+        'REGIÓN ORINOQUÍA': [81, 85, 50, 99]
+    }
+
+    def clas_region(value):
+        for region, numbers in dict_regiones.items():
+            if value in numbers:
+                return region
+        return 'Error'
+    FT_13['REGIÓN'] = FT_13['ID_DEPARTAMENTO'].map(clas_region)    
+    
     return FT_13
 FT1_3=T13()
 
 MUNICIPIOS=sorted(FT1_3['CODIGO_MUNICIPIO'].unique().tolist())
 DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
+REGIONES=sorted(FT1_3['REGIÓN'].unique().tolist())
+
 
 fact_escala={'ACCESOS':1e6,'VALOR FACTURADO':1e9,'NÚMERO EMPRESAS':1}
 
@@ -78,6 +96,7 @@ Telfija=FT1_3[FT1_3['SERVICIO_PAQUETE'].isin(['Triple Play (Telefonía fija + In
     'Duo Play 1 (Telefonía fija + Internet fijo)','Duo Play 3 (Telefonía fija y TV por suscripción)',
     'Telefonía fija'])]   
 
+#Funciones para graficar
 def PlotlyBarrasSegmento(df,column):
     fig=make_subplots(rows=1,cols=1)
     mean_val = df[column].mean()
@@ -181,6 +200,7 @@ def PlotlyTable(df,title):
                    title_font_size = 20, title_x = 0.5) 
     return fig
 
+#Extracción de información por ámbito
 def Nac_info(df):
     dfNac=pd.concat([df.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
@@ -188,6 +208,15 @@ def Nac_info(df):
     dfNac2=pd.pivot(dfNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     dfNac2_html = f'<div class="styled-table">{dfNac2.to_html(index=False)}</div>'
     return dfNac, dfNac2
+
+def Reg_info(df):
+    dfReg=pd.concat([df.groupby(['PERIODO', 'CODSEG','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfReg=dfReg.rename(columns=dict_variables)
+    dfReg=dfReg[dfReg['REGIÓN']==select_reg]
+    dfReg2=pd.pivot(dfReg[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+    dfDep2_html = f'<div class="styled-table">{dfReg2.to_html(index=False)}</div>'
+    return dfReg,dfReg2
 
 def Dep_info(df):
     dfDep=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -208,7 +237,9 @@ def Muni_info(df):
     return dfMUNI, dfMUNI2
 
 #Botón ámbito
-select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Departamental','Municipal'])
+select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Regional','Departamental','Municipal'])
+if select_ambito=='Regional':
+    select_reg=st.sidebar.selectbox('Región',REGIONES)
 if select_ambito=='Departamental':
     select_dpto=st.sidebar.selectbox('Departamento',DEPARTAMENTOS)
 if select_ambito=='Municipal':
@@ -226,13 +257,15 @@ def metricServ(df, amb, var):
         agg_func = 'sum'
         
     if amb == 'Nacional':
-        filter_condition = (df['PERIODO'] == '2022-T4')
+        filter_condition = (df['PERIODO']=='2022-T4')
     elif amb == 'Departamental':
-        filter_condition = (df['PERIODO'] == '2022-T4') & (df['CODIGO_DEPARTAMENTO'] == select_dpto)
+        filter_condition = (df['PERIODO']=='2022-T4')&(df['CODIGO_DEPARTAMENTO'] == select_dpto)
     elif amb == 'Municipal':
-        filter_condition = (df['PERIODO'] == '2022-T4') & (df['CODIGO_MUNICIPIO'] == select_muni)
+        filter_condition = (df['PERIODO']=='2022-T4')&(df['CODIGO_MUNICIPIO'] == select_muni)
+    elif amb == 'Regional':
+        filter_condition = (df['PERIODO']=='2022-T4')&(df['REGIÓN'] == select_reg)
     else:
-        return "Invalid 'amb' value"
+        return "Invalido"
     Data = df[filter_condition].groupby(['PERIODO']).agg({dict_variables_inverse[var]: agg_func}).reset_index()
     x = Data[dict_variables_inverse[var]].values[0]   
     if x >= 1e9:
@@ -243,7 +276,7 @@ def metricServ(df, amb, var):
         y_title = f"{x}" 
     return y_title
     
-
+#Estructura con métricas del último periodo
 col1,col2,col3,col4,col5,col6=st.columns([0.5,1]*3)
 with col2:
     st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/internet-fijo.png'/></div>""",unsafe_allow_html=True) 
@@ -257,9 +290,10 @@ col4.metric("Telefonía fija", metricServ(Telfija,select_ambito,select_variable)
 col6.metric("TV por suscripción", metricServ(TVporSus,select_ambito,select_variable))
 st.markdown('<hr>',unsafe_allow_html=True)
 
+#Botón servicio
 select_servicio=st.radio('Servicio',['Internet Fijo','TV por suscripción','Telefonía fija', 'Empaquetados'],horizontal=True)
 
-
+#Internet Fijo
 if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
     if select_ambito=='Nacional':
@@ -270,6 +304,16 @@ if select_servicio=='Internet Fijo':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Nac_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
+
+    if select_ambito=='Regional':
+        st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
+            st.plotly_chart(PlotlyBarrasSegmento(Reg_info(InternetFijo)[0],select_variable), use_container_width=True)
+        with tab2:
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Reg_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
                       
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -290,7 +334,8 @@ if select_servicio=='Internet Fijo':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:            
                 st.plotly_chart(PlotlyTable(Muni_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
-        
+
+#Televisión por suscripción        
 if select_servicio=='TV por suscripción':
     st.markdown(r"""<div class="titulo"><h2>Televisión por suscripción</h2></div>""",unsafe_allow_html=True)
     if select_ambito=='Nacional':
@@ -301,6 +346,16 @@ if select_servicio=='TV por suscripción':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Nac_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
+
+    if select_ambito=='Regional':
+        st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
+            st.plotly_chart(PlotlyBarrasSegmento(Reg_info(TVporSus)[0],select_variable), use_container_width=True)
+        with tab2:
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Reg_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
 
     if select_ambito=='Departamental':
         
@@ -322,7 +377,8 @@ if select_servicio=='TV por suscripción':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Muni_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
-       
+
+#Telefonía fija       
 if select_servicio=='Telefonía fija':
     st.markdown(r"""<div class="titulo"><h2>Telefonía fija</h2></div>""",unsafe_allow_html=True)    
    
@@ -334,6 +390,16 @@ if select_servicio=='Telefonía fija':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Nac_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)
+
+    if select_ambito=='Regional':
+        st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
+            st.plotly_chart(PlotlyBarrasSegmento(Reg_info(Telfija)[0],select_variable), use_container_width=True)
+        with tab2:
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                st.plotly_chart(PlotlyTable(Reg_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)
 
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
@@ -355,7 +421,8 @@ if select_servicio=='Telefonía fija':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Muni_info(Telfija)[1],select_variable.capitalize()),use_container_width=True) 
-                
+
+#Servicios empaquetados                
 if select_servicio=='Empaquetados':
     st.markdown(r"""<div class="titulo"><h2>Empaquetados fijos</h2></div>""",unsafe_allow_html=True)
     with st.expander("Clasificaciones empaquetados fijos"):
@@ -385,7 +452,29 @@ if select_servicio=='Empaquetados':
                 Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
                 Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
                 st.plotly_chart(PlotlyTable(Empaquetados_Nac2,select_variable.capitalize()),use_container_width=True) 
-                 
+
+    if select_ambito=='Regional':
+        st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)
+        Empaquetados_Reg=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
+        Empaquetados_Reg=Empaquetados_Reg.rename(columns=dict_variables)
+        Empaquetados_Reg['SERVICIO_PAQUETE']=Empaquetados_Reg['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
+        Empaquetados_Reg=Empaquetados_Reg[Empaquetados_Reg['REGIÓN']==select_reg]
+        Empaquetados_Reg2=pd.concat([FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        Empaquetados_Reg2=Empaquetados_Reg2.rename(columns=dict_variables)
+        Empaquetados_Reg2=Empaquetados_Reg2[Empaquetados_Reg2['REGIÓN']==select_reg]
+        Empaquetados_Reg2=pd.pivot(Empaquetados_Reg2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+
+        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        with tab1:
+            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Reg,select_variable),use_container_width=True)
+        with tab2:
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:               
+                select_servpaquete=st.selectbox('',Empaquetados_Reg2['SERVICIO_PAQUETE'].unique().tolist())
+                Empaquetados_Reg2=Empaquetados_Reg2[Empaquetados_Reg2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Reg2_html = f'<div class="styled-table">{Empaquetados_Reg2.to_html(index=False)}</div>'  
+                st.plotly_chart(PlotlyTable(Empaquetados_Reg2,select_variable.capitalize()),use_container_width=True)                 
             
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
