@@ -73,7 +73,8 @@ def T13(allow_output_mutation=True):
             if value in numbers:
                 return region
         return 'Error'
-    FT_13['REGIÓN'] = FT_13['ID_DEPARTAMENTO'].map(clas_region)    
+    FT_13['REGIÓN'] = FT_13['ID_DEPARTAMENTO'].map(clas_region) 
+    FT_13=FT_13[FT_13['ANNO']==2022]   
     
     return FT_13
 FT1_3=T13()
@@ -82,6 +83,40 @@ MUNICIPIOS=sorted(FT1_3['CODIGO_MUNICIPIO'].unique().tolist())
 DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
 REGIONES=sorted(FT1_3['REGIÓN'].unique().tolist())
 
+#Hogares para cálculo de la penetración
+Hogares=pd.read_csv('https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/HOGARES.csv',delimiter=';')
+Hogares=Hogares[Hogares['ANNO']==2022]
+Hogares['ID_DEPARTAMENTO']=Hogares['ID_DEPARTAMENTO'].astype('str')
+Hogares['ID_MUNICIPIO']=Hogares['ID_MUNICIPIO'].astype('str').str.zfill(5)
+
+#Centroides departamentos
+def centroid_dep(cod_dep):
+    coord_dep=pd.read_csv('https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/centroides_dep.csv',delimiter=';',decimal='.')
+    coord_dep=coord_dep.rename(columns={'Código':'ID_DEPARTAMENTO'})
+    coord_dep['ID_DEPARTAMENTO']=coord_dep['ID_DEPARTAMENTO'].astype('str').str.zfill(2)
+    coord_dep[['LATITUD','LONGITUD']]=coord_dep[['LATITUD','LONGITUD']].replace(',','.',regex=True).astype('float')
+    centroid=coord_dep[coord_dep['ID_DEPARTAMENTO']==cod_dep].iloc[0][['LATITUD','LONGITUD']].values.tolist()
+    return centroid
+
+#Información geográfica 
+##Datos departamentales
+gdf = gpd.read_file("colombia2.geo.json")
+geoJSON_states = list(gdf.NOMBRE_DPT.values)
+denominations_json = []
+Id_json = []
+Colombian_DPTO=json.load(open("colombia2.geo.json", 'r'))
+for index in range(len(Colombian_DPTO['features'])):
+    denominations_json.append(Colombian_DPTO['features'][index]['properties']['NOMBRE_DPT'])
+    Id_json.append(Colombian_DPTO['features'][index]['properties']['DPTO'])
+denominations_json=sorted(denominations_json)
+gdf=gdf.rename(columns={"NOMBRE_DPT":'DESC_DEPARTAMENTO','DPTO':'ID_DEPARTAMENTO'})
+gdf['ID_DEPARTAMENTO']=gdf['ID_DEPARTAMENTO'].astype('int64')
+gdf['DESC_DEPARTAMENTO']=gdf['DESC_DEPARTAMENTO'].replace({'ARCHIPIELAGO DE SAN ANDRES PROVIDENCIA Y SANTA CATALINA':'SAN ANDRES Y PROVIDENCIA'})
+##Datos municipales
+Colombian_MUNI=json.load(open("co_2018_MGN_MPIO_POLITICO.geojson", 'r'))
+gdf2 = gpd.read_file("co_2018_MGN_MPIO_POLITICO.geojson")
+gdf2=gdf2.rename(columns={'MPIO_CNMBR':'DESC_MUNICIPIO','MPIO_CCNCT':'ID_MUNICIPIO'})
+gdf2['ID_MUNICIPIO']=gdf2['ID_MUNICIPIO'].astype('int64')
 
 fact_escala={'ACCESOS':1e6,'VALOR FACTURADO':1e9,'NÚMERO EMPRESAS':1}
 
@@ -297,7 +332,7 @@ select_servicio=st.radio('Servicio',['Internet Fijo','TV por suscripción','Tele
 if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
     if select_ambito=='Nacional':
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -317,7 +352,7 @@ if select_servicio=='Internet Fijo':
                       
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
