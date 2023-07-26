@@ -16,6 +16,7 @@ import geopandas as gpd
 import folium
 from folium.plugins import FloatImage
 import urllib
+from streamlit_folium import folium_static
 from functools import partial, reduce
 
 
@@ -88,6 +89,7 @@ Hogares=pd.read_csv('https://raw.githubusercontent.com/postdatacrc/Herrammienta_
 Hogares=Hogares[Hogares['ANNO']==2022]
 Hogares['ID_DEPARTAMENTO']=Hogares['ID_DEPARTAMENTO'].astype('str')
 Hogares['ID_MUNICIPIO']=Hogares['ID_MUNICIPIO'].astype('str').str.zfill(5)
+HogaresDep=Hogares.groupby(['ID_DEPARTAMENTO'])['HOGARES'].sum().reset_index()
 
 #Centroides departamentos
 def centroid_dep(cod_dep):
@@ -235,6 +237,113 @@ def PlotlyTable(df,title):
                    title_font_size = 20, title_x = 0.5) 
     return fig
 
+#Funciones para hacer los mapas
+def MapaNacional(df,periodo):
+    mapaNacional=gdf.merge(df, on=['ID_DEPARTAMENTO'])
+    mapaNacional=mapaNacional[mapaNacional['PERIODO']==periodo]
+    mapaNacional['ID_DEPARTAMENTO']=mapaNacional['ID_DEPARTAMENTO'].astype('str')
+    mapaNacional=mapaNacional.merge(HogaresDep,on=['ID_DEPARTAMENTO'])
+    mapaNacional['PENETRACION']=round(100*mapaNacional['CANTIDAD_LINEAS_ACCESOS']/mapaNacional['HOGARES'],2)
+    # create a plain world map
+    Nac_map = folium.Map(location=[4.570868, -74.297333], zoom_start=5,tiles='cartodbpositron')
+    tiles = ['stamenwatercolor', 'cartodbpositron', 'openstreetmap', 'stamenterrain']
+    for tile in tiles:
+        folium.TileLayer(tile).add_to(Nac_map)
+    choropleth=folium.Choropleth(
+        geo_data=Colombian_DPTO,
+        data=mapaNacional,
+        columns=['ID_DEPARTAMENTO', 'PENETRACION'],
+        key_on='feature.properties.DPTO',
+        fill_color='Reds', 
+        fill_opacity=0.9, 
+        line_opacity=0.9,
+        legend_name='Penetración',
+        nan_fill_color = "gray",
+        smooth_factor=0).add_to(Nac_map)
+    # Adicionar nombres del departamento
+    style_function = "font-size: 15px; font-weight: bold"
+    choropleth.geojson.add_child(
+        folium.features.GeoJsonTooltip(['DPTO'], style=style_function, labels=False))
+    folium.LayerControl().add_to(Nac_map)
+
+    #Adicionar valores porcentaje
+    style_function = lambda x: {'fillColor': '#ffffff', 
+                                'color':'#000000', 
+                                'fillOpacity': 0.1, 
+                                'weight': 0.1}
+    highlight_function = lambda x: {'fillColor': '#000000', 
+                                    'color':'#000000', 
+                                    'fillOpacity': 0.50, 
+                                    'weight': 0.1}
+    NIL = folium.features.GeoJson(
+        data = mapaNacional,
+        style_function=style_function, 
+        control=False,
+        highlight_function=highlight_function, 
+        tooltip=folium.features.GeoJsonTooltip(
+            fields=['DEPARTAMENTO','ID_DEPARTAMENTO','PENETRACION'],
+            aliases=['Departamento','ID','Penetración'],
+            style=("background-color: white; color: #333333; font-family: helvetica; font-size: 12px; padding: 10px;") 
+        )
+    )
+    Nac_map.add_child(NIL)
+    Nac_map.keep_in_front(NIL)
+    return Nac_map    
+
+def MapaMunicipal(df,periodo,codigo_dep):
+    mapaporDep=gdf2.merge(df, on=['ID_MUNICIPIO'])
+    mapaporDep=mapaporDep[mapaporDep['PERIODO']==periodo]
+    mapaporDep['ID_MUNICIPIO']=mapaporDep['ID_MUNICIPIO'].astype('str').str.zfill(5)
+    mapaporDep=mapaporDep.merge(Hogares,on=['ID_MUNICIPIO'])
+    mapaporDep['PENETRACION']=round(100*mapaporDep['CANTIDAD_LINEAS_ACCESOS']/mapaporDep['HOGARES'],2)
+    mapaporDep=mapaporDep[mapaporDep['DPTO_CCDGO']==codigo_dep]
+    
+    # create a plain world map
+    Dep_map = folium.Map(location=centroid_dep(codigo_dep), zoom_start=7,tiles='cartodbpositron')
+    tiles = ['stamenwatercolor', 'cartodbpositron', 'openstreetmap', 'stamenterrain']
+    for tile in tiles:
+        folium.TileLayer(tile).add_to(Dep_map)
+    choropleth=folium.Choropleth(
+        geo_data=Colombian_MUNI,
+        data=mapaporDep,
+        columns=['ID_MUNICIPIO', 'PENETRACION'],
+        key_on='feature.properties.MPIO_CCNCT',
+        fill_color='Reds', 
+        fill_opacity=0.9, 
+        line_opacity=0.9,
+        legend_name='Penetración',
+        nan_fill_color = "grey",
+        smooth_factor=0).add_to(Dep_map)
+    # Adicionar nombres del departamento
+    style_function = "font-size: 15px; font-weight: bold"
+    choropleth.geojson.add_child(
+        folium.features.GeoJsonTooltip(['MPIO_CCNCT'], style=style_function, labels=False))
+    folium.LayerControl().add_to(Dep_map)
+
+    #Adicionar valores porcentaje
+    style_function = lambda x: {'fillColor': '#ffffff', 
+                                'color':'#000000', 
+                                'fillOpacity': 0.1, 
+                                'weight': 0.1}
+    highlight_function = lambda x: {'fillColor': '#000000', 
+                                    'color':'#000000', 
+                                    'fillOpacity': 0.50, 
+                                    'weight': 0.1}
+    NIL = folium.features.GeoJson(
+        data = mapaporDep,
+        style_function=style_function, 
+        control=False,
+        highlight_function=highlight_function, 
+        tooltip=folium.features.GeoJsonTooltip(
+            fields=['MUNICIPIO','ID_MUNICIPIO','PENETRACION'],
+            aliases=['Municipio','ID','Penetración'],
+            style=("background-color: white; color: #333333; font-family: helvetica; font-size: 12px; padding: 10px;") 
+        )
+    )
+    Dep_map.add_child(NIL)
+    Dep_map.keep_in_front(NIL)
+    return Dep_map    
+
 #Extracción de información por ámbito
 def Nac_info(df):
     dfNac=pd.concat([df.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -339,7 +448,16 @@ if select_servicio=='Internet Fijo':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Nac_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
-
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning('El mapa solo está disponible para la variable de accesos')  
+            else:
+                InternetFijoDep=InternetFijo.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+                col1,col2,col3=st.columns([1,1.5,1])
+                with col2:
+                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                    folium_static(MapaNacional(InternetFijoDep,periodo),width=450)        
+                
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
         tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
@@ -359,6 +477,15 @@ if select_servicio=='Internet Fijo':
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Dep_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning('El mapa solo está disponible para la variable de accesos')  
+            else:
+                InternetFijoMuni=InternetFijo.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+                col1,col2,col3=st.columns([1,1.5,1])
+                with col2:
+                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                    folium_static(MapaMunicipal(InternetFijoMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
         
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -374,13 +501,22 @@ if select_servicio=='Internet Fijo':
 if select_servicio=='TV por suscripción':
     st.markdown(r"""<div class="titulo"><h2>Televisión por suscripción</h2></div>""",unsafe_allow_html=True)
     if select_ambito=='Nacional':
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Nac_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning('El mapa solo está disponible para la variable de accesos')  
+            else:
+                TVporSusDep=TVporSus.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+                col1,col2,col3=st.columns([1,1.5,1])
+                with col2:
+                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                    folium_static(MapaNacional(TVporSusDep,periodo),width=450)   
 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -395,13 +531,22 @@ if select_servicio=='TV por suscripción':
     if select_ambito=='Departamental':
         
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Dep_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning('El mapa solo está disponible para la variable de accesos')  
+            else:
+                TVporSusMuni=TVporSus.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+                col1,col2,col3=st.columns([1,1.5,1])
+                with col2:
+                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                    folium_static(MapaMunicipal(TVporSusMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
 
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -418,14 +563,23 @@ if select_servicio=='Telefonía fija':
     st.markdown(r"""<div class="titulo"><h2>Telefonía fija</h2></div>""",unsafe_allow_html=True)    
    
     if select_ambito=='Nacional':
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Nac_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)
-
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning('El mapa solo está disponible para la variable de accesos')  
+            else:
+                TelfijaDep=Telfija.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+                col1,col2,col3=st.columns([1,1.5,1])
+                with col2:
+                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                    folium_static(MapaNacional(TelfijaDep,periodo),width=450) 
+                    
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
         tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
@@ -439,14 +593,23 @@ if select_servicio=='Telefonía fija':
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
 
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Dep_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)           
-            
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning('El mapa solo está disponible para la variable de accesos')  
+            else:
+                TelfijaMuni=Telfija.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+                col1,col2,col3=st.columns([1,1.5,1])
+                with col2:
+                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                    folium_static(MapaMunicipal(TelfijaMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+                                
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
