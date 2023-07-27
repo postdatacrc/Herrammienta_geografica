@@ -91,7 +91,7 @@ Hogares['ID_DEPARTAMENTO']=Hogares['ID_DEPARTAMENTO'].astype('str')
 Hogares['ID_MUNICIPIO']=Hogares['ID_MUNICIPIO'].astype('str').str.zfill(5)
 HogaresDep=Hogares.groupby(['ID_DEPARTAMENTO'])['HOGARES'].sum().reset_index()
 
-#Centroides departamentos
+#Centroides departamentos y regiones
 def centroid_dep(cod_dep):
     coord_dep=pd.read_csv('https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/centroides_dep.csv',delimiter=';',decimal='.')
     coord_dep=coord_dep.rename(columns={'Código':'ID_DEPARTAMENTO'})
@@ -99,6 +99,28 @@ def centroid_dep(cod_dep):
     coord_dep[['LATITUD','LONGITUD']]=coord_dep[['LATITUD','LONGITUD']].replace(',','.',regex=True).astype('float')
     centroid=coord_dep[coord_dep['ID_DEPARTAMENTO']==cod_dep].iloc[0][['LATITUD','LONGITUD']].values.tolist()
     return centroid
+def centroid_reg(region):
+    coord_dep=pd.read_csv('https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/centroides_dep.csv',delimiter=';',decimal='.')
+    coord_dep=coord_dep.rename(columns={'Código':'ID_DEPARTAMENTO'})
+    coord_dep[['LATITUD','LONGITUD']]=coord_dep[['LATITUD','LONGITUD']].replace(',','.',regex=True).astype('float')
+    dict_regiones = {
+        'REGIÓN ANDINA': [5, 11, 15, 17, 25, 41, 54, 63, 66, 68, 73],
+        'REGIÓN AMAZÓNICA': [91, 18, 94, 95, 86, 97],
+        'REGIÓN PACÍFICA': [76, 27, 19, 52],
+        'REGIÓN CARIBE': [8, 13, 20, 23, 44, 47, 70, 88],
+        'REGIÓN ORINOQUÍA': [81, 85, 50, 99]
+    }
+    def clas_region(value):
+        for region, numbers in dict_regiones.items():
+            if value in numbers:
+                return region
+        return 'Error'  
+    coord_dep['REGIÓN'] = coord_dep['ID_DEPARTAMENTO'].map(clas_region) 
+    coord_dep['ID_DEPARTAMENTO']=coord_dep['ID_DEPARTAMENTO'].astype('str').str.zfill(2)
+    coord_depAgg=coord_dep.groupby(['REGIÓN']).agg({'LATITUD':'mean','LONGITUD':'mean'}).reset_index()
+    centroid=coord_depAgg[coord_depAgg['REGIÓN']==region].iloc[0][['LATITUD','LONGITUD']].values.tolist()
+    return centroid
+
 
 #Información geográfica 
 ##Datos departamentales
@@ -344,6 +366,60 @@ def MapaMunicipal(df,periodo,codigo_dep):
     Dep_map.keep_in_front(NIL)
     return Dep_map    
 
+def MapaRegional(df,periodo,region):
+    mapaporReg=gdf2.merge(df, on=['ID_MUNICIPIO'])
+    mapaporReg=mapaporReg[mapaporReg['PERIODO']==periodo]
+    mapaporReg['ID_MUNICIPIO']=mapaporReg['ID_MUNICIPIO'].astype('str').str.zfill(5)
+    mapaporReg=mapaporReg.merge(Hogares,on=['ID_MUNICIPIO'])
+    mapaporReg['PENETRACION']=round(100*mapaporReg['CANTIDAD_LINEAS_ACCESOS']/mapaporReg['HOGARES'],2)
+    mapaporReg=mapaporReg[mapaporReg['REGIÓN']==region]
+    
+    # create a plain world map
+    Reg_map = folium.Map(location=centroid_reg(region), zoom_start=6,tiles='cartodbpositron')
+    tiles = ['stamenwatercolor', 'cartodbpositron', 'openstreetmap', 'stamenterrain']
+    for tile in tiles:
+        folium.TileLayer(tile).add_to(Reg_map)
+    choropleth=folium.Choropleth(
+        geo_data=Colombian_MUNI,
+        data=mapaporReg,
+        columns=['ID_MUNICIPIO', 'PENETRACION'],
+        key_on='feature.properties.MPIO_CCNCT',
+        fill_color='Reds', 
+        fill_opacity=0.9, 
+        line_opacity=0.9,
+        legend_name='Penetración',
+        nan_fill_color = "grey",
+        smooth_factor=0).add_to(Reg_map)
+    # Adicionar nombres del departamento
+    style_function = "font-size: 15px; font-weight: bold"
+    choropleth.geojson.add_child(
+        folium.features.GeoJsonTooltip(['MPIO_CCNCT'], style=style_function, labels=False))
+    folium.LayerControl().add_to(Reg_map)
+
+    #Adicionar valores porcentaje
+    style_function = lambda x: {'fillColor': '#ffffff', 
+                                'color':'#000000', 
+                                'fillOpacity': 0.1, 
+                                'weight': 0.1}
+    highlight_function = lambda x: {'fillColor': '#000000', 
+                                    'color':'#000000', 
+                                    'fillOpacity': 0.50, 
+                                    'weight': 0.1}
+    NIL = folium.features.GeoJson(
+        data = mapaporReg,
+        style_function=style_function, 
+        control=False,
+        highlight_function=highlight_function, 
+        tooltip=folium.features.GeoJsonTooltip(
+            fields=['MUNICIPIO','ID_MUNICIPIO','PENETRACION'],
+            aliases=['Municipio','ID','Penetración'],
+            style=("background-color: white; color: #333333; font-family: helvetica; font-size: 12px; padding: 10px;") 
+        )
+    )
+    Reg_map.add_child(NIL)
+    Reg_map.keep_in_front(NIL)
+    return Reg_map
+
 #Extracción de información por ámbito
 def Nac_info(df):
     dfNac=pd.concat([df.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -421,17 +497,20 @@ def metricServ(df, amb, var):
     return y_title
     
 #Estructura con métricas del último periodo
-col1,col2,col3,col4,col5,col6=st.columns([0.5,1]*3)
-with col2:
-    st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/internet-fijo.png'/></div>""",unsafe_allow_html=True) 
-with col4:
-    st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/telefonia-fija.png'/></div>""",unsafe_allow_html=True) 
-with col6:
-    st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/tv-por-suscripcion.png'/></div>""",unsafe_allow_html=True) 
-     
-col2.metric("Internet fijo", metricServ(InternetFijo,select_ambito,select_variable))
-col4.metric("Telefonía fija", metricServ(Telfija,select_ambito,select_variable))
-col6.metric("TV por suscripción", metricServ(TVporSus,select_ambito,select_variable))
+with st.container():
+    col1,col2,col3,col4,col5,col6=st.columns([0.5,1]*3)
+    with col2:
+        st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/internet-fijo.png'/></div>""",unsafe_allow_html=True) 
+    with col4:
+        st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/telefonia-fija.png'/></div>""",unsafe_allow_html=True) 
+    with col6:
+        st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/tv-por-suscripcion.png'/></div>""",unsafe_allow_html=True) 
+        
+    col2.metric("Internet fijo", metricServ(InternetFijo,select_ambito,select_variable))
+    col4.metric("Telefonía fija", metricServ(Telfija,select_ambito,select_variable))
+    col6.metric("TV por suscripción", metricServ(TVporSus,select_ambito,select_variable))
+    
+    st.markdown("<b>Nota</b>: Información para el periodo 2022-T4. Tomada del formato T.1.3 de la resolución CRC 5050 de 2016",unsafe_allow_html=True)
 st.markdown('<hr>',unsafe_allow_html=True)
 
 #Botón servicio
@@ -450,24 +529,35 @@ if select_servicio=='Internet Fijo':
                 st.plotly_chart(PlotlyTable(Nac_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
         with tab3:
             if select_variable!='ACCESOS':
-                st.warning('El mapa solo está disponible para la variable de accesos')  
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
-                InternetFijoDep=InternetFijo.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-                col1,col2,col3=st.columns([1,1.5,1])
-                with col2:
-                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                    folium_static(MapaNacional(InternetFijoDep,periodo),width=450)        
+                pass
+            InternetFijoDep=InternetFijo.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaNacional(InternetFijoDep,periodo),width=450)        
                 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Reg_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
-                      
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
+            else:
+                pass
+            InternetFijoReg=InternetFijo.groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaRegional(InternetFijoReg,periodo,select_reg),width=450) 
+                     
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
@@ -479,13 +569,14 @@ if select_servicio=='Internet Fijo':
                 st.plotly_chart(PlotlyTable(Dep_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
         with tab3:
             if select_variable!='ACCESOS':
-                st.warning('El mapa solo está disponible para la variable de accesos')  
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
-                InternetFijoMuni=InternetFijo.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-                col1,col2,col3=st.columns([1,1.5,1])
-                with col2:
-                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                    folium_static(MapaMunicipal(InternetFijoMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+                pass
+            InternetFijoMuni=InternetFijo.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaMunicipal(InternetFijoMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
         
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -510,23 +601,34 @@ if select_servicio=='TV por suscripción':
                 st.plotly_chart(PlotlyTable(Nac_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
         with tab3:
             if select_variable!='ACCESOS':
-                st.warning('El mapa solo está disponible para la variable de accesos')  
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
-                TVporSusDep=TVporSus.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-                col1,col2,col3=st.columns([1,1.5,1])
-                with col2:
-                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                    folium_static(MapaNacional(TVporSusDep,periodo),width=450)   
+                pass
+            TVporSusDep=TVporSus.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaNacional(TVporSusDep,periodo),width=450)   
 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Reg_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
+            else:
+                pass
+            TVporSusReg=TVporSus.groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaRegional(TVporSusReg,periodo,select_reg),width=450) 
 
     if select_ambito=='Departamental':
         
@@ -540,13 +642,14 @@ if select_servicio=='TV por suscripción':
                 st.plotly_chart(PlotlyTable(Dep_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
         with tab3:
             if select_variable!='ACCESOS':
-                st.warning('El mapa solo está disponible para la variable de accesos')  
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
-                TVporSusMuni=TVporSus.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-                col1,col2,col3=st.columns([1,1.5,1])
-                with col2:
-                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                    folium_static(MapaMunicipal(TVporSusMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+                pass 
+            TVporSusMuni=TVporSus.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaMunicipal(TVporSusMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
 
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -572,23 +675,34 @@ if select_servicio=='Telefonía fija':
                 st.plotly_chart(PlotlyTable(Nac_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)
         with tab3:
             if select_variable!='ACCESOS':
-                st.warning('El mapa solo está disponible para la variable de accesos')  
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
-                TelfijaDep=Telfija.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-                col1,col2,col3=st.columns([1,1.5,1])
-                with col2:
-                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                    folium_static(MapaNacional(TelfijaDep,periodo),width=450) 
+                pass
+            TelfijaDep=Telfija.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaNacional(TelfijaDep,periodo),width=450) 
                     
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Reg_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)
+        with tab3:
+            if select_variable!='ACCESOS':
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
+            else:
+                pass
+            TelfijaReg=Telfija.groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaRegional(TelfijaReg,periodo,select_reg),width=450) 
 
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
@@ -602,13 +716,14 @@ if select_servicio=='Telefonía fija':
                 st.plotly_chart(PlotlyTable(Dep_info(Telfija)[1],select_variable.capitalize()),use_container_width=True)           
         with tab3:
             if select_variable!='ACCESOS':
-                st.warning('El mapa solo está disponible para la variable de accesos')  
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
-                TelfijaMuni=Telfija.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-                col1,col2,col3=st.columns([1,1.5,1])
-                with col2:
-                    periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                    folium_static(MapaMunicipal(TelfijaMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+                pass
+            TelfijaMuni=Telfija.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaMunicipal(TelfijaMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
                                 
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
