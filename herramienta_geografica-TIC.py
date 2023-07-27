@@ -787,8 +787,7 @@ if select_servicio=='Empaquetados':
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
                 folium_static(MapaNacional(EmpDep,periodo),width=450)                
-        
-        
+                
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)
         Empaquetados_Reg=Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
