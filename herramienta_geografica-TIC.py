@@ -154,6 +154,14 @@ TVporSus=FT1_3[FT1_3['SERVICIO_PAQUETE'].isin(['Triple Play (Telefonía fija + I
 Telfija=FT1_3[FT1_3['SERVICIO_PAQUETE'].isin(['Triple Play (Telefonía fija + Internet fijo + TV por suscripción)',
     'Duo Play 1 (Telefonía fija + Internet fijo)','Duo Play 3 (Telefonía fija y TV por suscripción)',
     'Telefonía fija'])]   
+Empaquetados=FT1_3.copy()
+Empaquetados['SERVICIO_PAQUETE']=Empaquetados['SERVICIO_PAQUETE'].replace({'Internet fijo':'Internet fijo individual',
+                                                                           'Televisión por suscripción':'Televisión por suscripción individual',
+                                                                           'Telefonía fija':'Telefonía fija individual',
+                                                                           'Duo Play 1 (Telefonía fija + Internet fijo)':'Duo Play 1',
+                                                                           'Duo Play 2 (Internet fijo y TV por suscripción)':'Duo Play 2', 
+                                                                           'Duo Play 3 (Telefonía fija y TV por suscripción)':'Duo Play 3', 
+                                                                           'Triple Play (Telefonía fija + Internet fijo + TV por suscripción)':'Triple Play'})
 
 #Funciones para graficar
 def PlotlyBarrasSegmento(df,column):
@@ -195,13 +203,16 @@ def PlotlyBarrasSegmento(df,column):
     fig.update_layout(yaxis_tickformat = '0,.0f')
     if column!='NÚMERO EMPRESAS':       
         fig.update_layout(barmode='stack')   
-        fig.add_trace(go.Scatter(x=df[df['SEGMENTO']==segmento]['PERIODO'],y=df[df['SEGMENTO']=='Total'][column].map('{:,.0f}'.format),
+        fig.add_trace(go.Scatter(x=df[df['SEGMENTO']==segmento]['PERIODO'],y=df[df['SEGMENTO']=='Total'][column].map('{:,.2f}'.format),
                                  mode='text',text=df[df['SEGMENTO']=='Total'][column].map('{:,.2f}'.format),textposition='top center',
                     textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
 
-def PlotlyBarrasEmpaquetados(df,column):
-    df2=df.groupby(['PERIODO'])[column].sum().reset_index()
+def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
+    if df[df['SERVICIO_PAQUETE'].isin(select_empaquetados)].empty==True:
+        df2=df
+    else:    
+        df2=df[df['SERVICIO_PAQUETE'].isin(select_empaquetados)].groupby(['PERIODO'])[column].sum().reset_index()
     fig=make_subplots(rows=1,cols=1)
     mean_val = df[column].mean()
     if mean_val >= 1e9:
@@ -215,10 +226,9 @@ def PlotlyBarrasEmpaquetados(df,column):
     else:
         y_title = f"{column}"
     paleta_colores=["#F5D05C", "#230C33","#BF1363","#CAA8F5", "#F39273", "#5FBFAB", "#0E79B2"]
-    Servicios=df['SERVICIO_PAQUETE'].unique().tolist()
-    colores_empaquetados={'Duo Play 1': '#F5D05C', 'Duo Play 3': '#230C33', 'Internet fijo': '#BF1363', 'Telefonía fija': '#CAA8F5', 'Televisión por suscripción': '#F39273', 'Triple play': '#5FBFAB', 'Duo Play 2': '#0E79B2'}
+    colores_empaquetados={'Duo Play 1': '#F5D05C', 'Duo Play 3': '#230C33', 'Internet fijo individual': '#BF1363', 'Telefonía fija individual': '#CAA8F5', 'Televisión por suscripción individual': '#F39273', 'Triple Play': '#5FBFAB', 'Duo Play 2': '#0E79B2'}
     
-    for servicio in Servicios:
+    for servicio in select_empaquetados:
         fig.add_trace(go.Bar(x=df[df['SERVICIO_PAQUETE']==servicio]['PERIODO'],
                             y=df[df['SERVICIO_PAQUETE']==servicio][column],name=servicio,marker_color=colores_empaquetados[servicio],
                             hovertemplate='%{y:.2f}'))
@@ -737,6 +747,7 @@ if select_servicio=='Telefonía fija':
 
 #Servicios empaquetados                
 if select_servicio=='Empaquetados':
+    Servicios=sorted(Empaquetados['SERVICIO_PAQUETE'].unique().tolist())
     st.markdown(r"""<div class="titulo"><h2>Empaquetados fijos</h2></div>""",unsafe_allow_html=True)
     with st.expander("Clasificaciones empaquetados fijos"):
         st.markdown("<b>Clasificaciones</b>",unsafe_allow_html=True)
@@ -747,17 +758,17 @@ if select_servicio=='Empaquetados':
     
     dict_serv_empaq={'Duo Play 1 (Telefonía fija + Internet fijo)':'Duo Play 1','Duo Play 2 (Internet fijo y TV por suscripción)':'Duo Play 2', 'Duo Play 3 (Telefonía fija y TV por suscripción)':'Duo Play 3', 'Triple Play (Telefonía fija + Internet fijo + TV por suscripción)':'Triple play'}    
     if select_ambito=='Nacional':
-        Empaquetados_Nac=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
+        Empaquetados_Nac=Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Nac=Empaquetados_Nac.rename(columns=dict_variables)
-        Empaquetados_Nac['SERVICIO_PAQUETE']=Empaquetados_Nac['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
-        Empaquetados_Nac2=pd.concat([FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-        FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        Empaquetados_Nac2=pd.concat([Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         Empaquetados_Nac2=Empaquetados_Nac2.rename(columns=dict_variables)
         Empaquetados_Nac2=pd.pivot(Empaquetados_Nac2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
-            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Nac,select_variable),use_container_width=True)
+            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
+            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Nac,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:              
@@ -765,22 +776,34 @@ if select_servicio=='Empaquetados':
                 Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
                 Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
                 st.plotly_chart(PlotlyTable(Empaquetados_Nac2,select_variable.capitalize()),use_container_width=True) 
-
+        with tab3:
+            select_empaq_mapa=st.multiselect('Escoja los servicios a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
+            if select_variable!='ACCESOS':
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
+            else:
+                pass
+            EmpDep=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq_mapa)].groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaNacional(EmpDep,periodo),width=450)                
+        
+        
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)
-        Empaquetados_Reg=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
+        Empaquetados_Reg=Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Reg=Empaquetados_Reg.rename(columns=dict_variables)
-        Empaquetados_Reg['SERVICIO_PAQUETE']=Empaquetados_Reg['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
         Empaquetados_Reg=Empaquetados_Reg[Empaquetados_Reg['REGIÓN']==select_reg]
-        Empaquetados_Reg2=pd.concat([FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-        FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        Empaquetados_Reg2=pd.concat([Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         Empaquetados_Reg2=Empaquetados_Reg2.rename(columns=dict_variables)
         Empaquetados_Reg2=Empaquetados_Reg2[Empaquetados_Reg2['REGIÓN']==select_reg]
         Empaquetados_Reg2=pd.pivot(Empaquetados_Reg2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
-            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Reg,select_variable),use_container_width=True)
+            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
+            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Reg,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:               
@@ -788,22 +811,33 @@ if select_servicio=='Empaquetados':
                 Empaquetados_Reg2=Empaquetados_Reg2[Empaquetados_Reg2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
                 Empaquetados_Reg2_html = f'<div class="styled-table">{Empaquetados_Reg2.to_html(index=False)}</div>'  
                 st.plotly_chart(PlotlyTable(Empaquetados_Reg2,select_variable.capitalize()),use_container_width=True)                 
+        with tab3:
+            select_empaq_mapa=st.multiselect('Escoja los servicios a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
+            if select_variable!='ACCESOS':
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
+            else:
+                pass
+            EmpReg=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq_mapa)].groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaRegional(EmpReg,periodo,select_reg),width=450) 
             
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
-        Empaquetados_Dep=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
+        Empaquetados_Dep=Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Dep=Empaquetados_Dep.rename(columns=dict_variables)
-        Empaquetados_Dep['SERVICIO_PAQUETE']=Empaquetados_Dep['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
         Empaquetados_Dep=Empaquetados_Dep[Empaquetados_Dep['CODIGO_DEPARTAMENTO']==select_dpto]
-        Empaquetados_Dep2=pd.concat([FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_DEPARTAMENTO','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-        FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        Empaquetados_Dep2=pd.concat([Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_DEPARTAMENTO','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         Empaquetados_Dep2=Empaquetados_Dep2.rename(columns=dict_variables)
         Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['CODIGO_DEPARTAMENTO']==select_dpto]
         Empaquetados_Dep2=pd.pivot(Empaquetados_Dep2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
-            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Dep,select_variable),use_container_width=True)
+            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
+            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Dep,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:               
@@ -811,23 +845,33 @@ if select_servicio=='Empaquetados':
                 Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
                 Empaquetados_Dep2_html = f'<div class="styled-table">{Empaquetados_Dep2.to_html(index=False)}</div>'  
                 st.plotly_chart(PlotlyTable(Empaquetados_Dep2,select_variable.capitalize()),use_container_width=True)
-                            
+        with tab3:
+            select_empaq_mapa=st.multiselect('Escoja los servicios a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
+            if select_variable!='ACCESOS':
+                st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
+            else:
+                pass
+            EmpMuni=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq_mapa)].groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+                folium_static(MapaMunicipal(EmpMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450)                                 
             
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
-        Empaquetados_Mun=FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
+        Empaquetados_Mun=Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Mun=Empaquetados_Mun.rename(columns=dict_variables)
-        Empaquetados_Mun['SERVICIO_PAQUETE']=Empaquetados_Mun['SERVICIO_PAQUETE'].replace(dict_serv_empaq)
         Empaquetados_Mun=Empaquetados_Mun[Empaquetados_Mun['CODIGO_MUNICIPIO']==select_muni]
-        Empaquetados_Mun2=pd.concat([FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_MUNICIPIO','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-        FT1_3.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+        Empaquetados_Mun2=pd.concat([Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_MUNICIPIO','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+        Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
         Empaquetados_Mun2=Empaquetados_Mun2.rename(columns=dict_variables)
         Empaquetados_Mun2=Empaquetados_Mun2[Empaquetados_Mun2['CODIGO_MUNICIPIO']==select_muni]
         Empaquetados_Mun2=pd.pivot(Empaquetados_Mun2[['PERIODO','SEGMENTO','SERVICIO_PAQUETE',select_variable]], index=['PERIODO','SERVICIO_PAQUETE'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
 
         tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
         with tab1:
-            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Mun,select_variable),use_container_width=True)
+            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
+            st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Mun,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:            
