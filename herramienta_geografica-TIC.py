@@ -269,6 +269,22 @@ def PlotlyTable(df,title):
                    title_font_size = 20, title_x = 0.5) 
     return fig
 
+def PlotlyTableEmpaquetados(df,title):
+    for cols in [x for x in df.columns if x not in ['PERIODO','SERVICIO_PAQUETE']]:
+        df[cols]=df[cols].astype(float).map('{:,.0f}'.format)
+    table = go.Table(columnwidth=[300,500,500,500],header=dict(values="<b>"+df.columns+"</b>",
+                                 fill_color='#2e297b',
+                align='center',font=dict(color='white', size=15, family='Tahoma'),height=50),
+                 cells=dict(values=[df[col] for col in df.columns],
+                            fill_color=[["#fffdf7","Silver"]*4],
+               align='center',font=dict(color='black', size=15, family='Tahoma'),height=30))
+    fig=go.Figure(data=[table])
+    fig.update_layout(height=500)
+    fig.update_layout(title =  "<b>"+title+"</b> ", 
+                   font_color = 'black', font_family='Tahoma', 
+                   title_font_size = 20, title_x = 0.5) 
+    return fig
+
 #Funciones para hacer los mapas
 def MapaNacional(df,periodo):
     mapaNacional=gdf.merge(df, on=['ID_DEPARTAMENTO'])
@@ -757,7 +773,9 @@ if select_servicio=='Empaquetados':
         st.markdown("<p>Duo play 3: Televisión por suscripción + Telefonía fija</p>",unsafe_allow_html=True)
     
     dict_serv_empaq={'Duo Play 1 (Telefonía fija + Internet fijo)':'Duo Play 1','Duo Play 2 (Internet fijo y TV por suscripción)':'Duo Play 2', 'Duo Play 3 (Telefonía fija y TV por suscripción)':'Duo Play 3', 'Triple Play (Telefonía fija + Internet fijo + TV por suscripción)':'Triple play'}    
+    select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
     if select_ambito=='Nacional':
+        
         Empaquetados_Nac=Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index()   
         Empaquetados_Nac=Empaquetados_Nac.rename(columns=dict_variables)
         Empaquetados_Nac2=pd.concat([Empaquetados.groupby(['PERIODO','SERVICIO_PAQUETE','CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -767,22 +785,19 @@ if select_servicio=='Empaquetados':
 
         tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
-            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Nac,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:              
-                select_servpaquete=st.selectbox('',Empaquetados_Nac2['SERVICIO_PAQUETE'].unique().tolist())
-                Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Nac2=Empaquetados_Nac2[Empaquetados_Nac2['SERVICIO_PAQUETE'].isin(select_empaq)]
                 Empaquetados_Nac2_html = f'<div class="styled-table">{Empaquetados_Nac2.to_html(index=False)}</div>'  
-                st.plotly_chart(PlotlyTable(Empaquetados_Nac2,select_variable.capitalize()),use_container_width=True) 
+                st.plotly_chart(PlotlyTableEmpaquetados(Empaquetados_Nac2,select_variable.capitalize()),use_container_width=True) 
         with tab3:
-            select_empaq_mapa=st.multiselect('Escoja los servicios a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             if select_variable!='ACCESOS':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            EmpDep=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq_mapa)].groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            EmpDep=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
@@ -801,22 +816,19 @@ if select_servicio=='Empaquetados':
 
         tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
-            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Reg,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:               
-                select_servpaquete=st.selectbox('',Empaquetados_Reg2['SERVICIO_PAQUETE'].unique().tolist())
-                Empaquetados_Reg2=Empaquetados_Reg2[Empaquetados_Reg2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Reg2=Empaquetados_Reg2[Empaquetados_Reg2['SERVICIO_PAQUETE'].isin(select_empaq)]
                 Empaquetados_Reg2_html = f'<div class="styled-table">{Empaquetados_Reg2.to_html(index=False)}</div>'  
-                st.plotly_chart(PlotlyTable(Empaquetados_Reg2,select_variable.capitalize()),use_container_width=True)                 
+                st.plotly_chart(PlotlyTableEmpaquetados(Empaquetados_Reg2,select_variable.capitalize()),use_container_width=True)                 
         with tab3:
-            select_empaq_mapa=st.multiselect('Escoja los servicios a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             if select_variable!='ACCESOS':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            EmpReg=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq_mapa)].groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            EmpReg=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
@@ -835,15 +847,13 @@ if select_servicio=='Empaquetados':
 
         tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
-            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Dep,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:               
-                select_servpaquete=st.selectbox('',Empaquetados_Dep2['SERVICIO_PAQUETE'].unique().tolist())
-                Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Dep2=Empaquetados_Dep2[Empaquetados_Dep2['SERVICIO_PAQUETE'].isin(select_empaq)]
                 Empaquetados_Dep2_html = f'<div class="styled-table">{Empaquetados_Dep2.to_html(index=False)}</div>'  
-                st.plotly_chart(PlotlyTable(Empaquetados_Dep2,select_variable.capitalize()),use_container_width=True)
+                st.plotly_chart(PlotlyTableEmpaquetados(Empaquetados_Dep2,select_variable.capitalize()),use_container_width=True)
         with tab3:
             select_empaq_mapa=st.multiselect('Escoja los servicios a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             if select_variable!='ACCESOS':
@@ -869,13 +879,11 @@ if select_servicio=='Empaquetados':
 
         tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
         with tab1:
-            select_empaq=st.multiselect('Escoja los servicios empaquetados o invividuales a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             st.plotly_chart(PlotlyBarrasEmpaquetados(Empaquetados_Mun,select_variable,select_empaq),use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:            
-                select_servpaquete=st.selectbox('',Empaquetados_Mun2['SERVICIO_PAQUETE'].unique().tolist())
-                Empaquetados_Mun2=Empaquetados_Mun2[Empaquetados_Mun2['SERVICIO_PAQUETE']==select_servpaquete].drop(columns=['SERVICIO_PAQUETE'],axis=1)
+                Empaquetados_Mun2=Empaquetados_Mun2[Empaquetados_Mun2['SERVICIO_PAQUETE'].isin(select_empaq)]
                 Empaquetados_Mun2_html = f'<div class="styled-table">{Empaquetados_Mun2.to_html(index=False)}</div>'  
-                st.plotly_chart(PlotlyTable(Empaquetados_Mun2,select_variable.capitalize()),use_container_width=True)
+                st.plotly_chart(PlotlyTableEmpaquetados(Empaquetados_Mun2,select_variable.capitalize()),use_container_width=True)
                                                
