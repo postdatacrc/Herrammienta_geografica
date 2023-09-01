@@ -208,6 +208,38 @@ def PlotlyBarrasSegmento(df,column):
                     textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
 
+def PlotlyLineasComparacion(df,ambito,column,complist):
+    fig=make_subplots(rows=1,cols=1)
+    mean_val = df[column].mean()
+    if mean_val >= 1e9:
+        y_title = f"{column} (Miles de Millones)"
+        df[column] = round(df[column] / 1e9,2)
+    elif mean_val >= 1e6:
+        y_title = f"{column} (Millones)"
+        df[column] = round(df[column] / 1e6,2)
+    else:
+        y_title = f"{column}"
+
+    for x_comp in complist:
+        dfcomp=df[df[ambito]==x_comp]
+        fig.add_trace(go.Scatter(x=dfcomp['PERIODO'], y=dfcomp[column],name=x_comp))
+    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
+    fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
+    ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
+    fig.update_layout(height=550,legend_title=None)
+    fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+    title={
+    'text':"<b>"+select_variable.capitalize()+"<br>("+select_servicio+")</b>",
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top'})
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickformat=',d')
+    fig.update_layout(yaxis_tickformat = '0,.2f')
+    return fig
+
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
     if df[df['SERVICIO_PAQUETE'].isin(select_empaquetados)].empty==True:
         df2=df
@@ -459,28 +491,28 @@ def Reg_info(df):
     dfReg=pd.concat([df.groupby(['PERIODO', 'CODSEG','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
     dfReg=dfReg.rename(columns=dict_variables)
-    dfReg=dfReg[dfReg['REGIÓN']==select_reg]
-    dfReg2=pd.pivot(dfReg[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+    dfReg_s=dfReg[dfReg['REGIÓN']==select_reg]
+    dfReg2=pd.pivot(dfReg_s[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     dfDep2_html = f'<div class="styled-table">{dfReg2.to_html(index=False)}</div>'
-    return dfReg,dfReg2
+    return dfReg_s,dfReg2,dfReg
 
 def Dep_info(df):
     dfDep=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
     dfDep=dfDep.rename(columns=dict_variables)
-    dfDep=dfDep[dfDep['CODIGO_DEPARTAMENTO']==select_dpto]
-    dfDep2=pd.pivot(dfDep[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+    dfDep_s=dfDep[dfDep['CODIGO_DEPARTAMENTO']==select_dpto]
+    dfDep2=pd.pivot(dfDep_s[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     dfDep2_html = f'<div class="styled-table">{dfDep2.to_html(index=False)}</div>'
-    return dfDep,dfDep2
+    return dfDep_s,dfDep2,dfDep
 
 def Muni_info(df):
     dfMUNI=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
     dfMUNI=dfMUNI.rename(columns=dict_variables)
-    dfMUNI=dfMUNI[dfMUNI['CODIGO_MUNICIPIO']==select_muni]
-    dfMUNI2=pd.pivot(dfMUNI[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
+    dfMUNI_s=dfMUNI[dfMUNI['CODIGO_MUNICIPIO']==select_muni]
+    dfMUNI2=pd.pivot(dfMUNI_s[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     dfMUNI2_html = f'<div class="styled-table">{dfMUNI2.to_html(index=False)}</div>' 
-    return dfMUNI, dfMUNI2
+    return dfMUNI_s,dfMUNI2,dfMUNI
 
 #Botón ámbito
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Regional','Departamental','Municipal'])
@@ -559,14 +591,14 @@ if select_servicio=='Internet Fijo':
             else:
                 pass
             InternetFijoDep=InternetFijo.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
+            col1,col2,col3=st.columns([0.5,2,0.5])
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaNacional(InternetFijoDep,periodo),width=450)        
+                folium_static(MapaNacional(InternetFijoDep,periodo))        
                 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación regional'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -582,11 +614,19 @@ if select_servicio=='Internet Fijo':
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaRegional(InternetFijoReg,periodo,select_reg),width=450) 
-                     
+                folium_static(MapaRegional(InternetFijoReg,periodo,select_reg),width=450)
+        with tab4:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_regionescomp=st.multiselect('Seleccione las regiones a comparar',REGIONES,[select_reg])
+                SegRegIntfijo=Reg_info(InternetFijo)[2]
+                SegyRegIntfijo=SegRegIntfijo[(SegRegIntfijo['SEGMENTO']==select_segmento)&(SegRegIntfijo['REGIÓN'].isin(select_regionescomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyRegIntfijo,'REGIÓN',select_variable,select_regionescomp) , use_containter_width=True)   
+                          
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -603,22 +643,38 @@ if select_servicio=='Internet Fijo':
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
                 folium_static(MapaMunicipal(InternetFijoMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
-        
+        with tab4:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_depcomp=st.multiselect('Seleccione los departamentos a comparar',DEPARTAMENTOS,[select_dpto])
+                SegDepIntfijo=Dep_info(InternetFijo)[2]
+                SegyDepIntfijo=SegDepIntfijo[(SegDepIntfijo['SEGMENTO']==select_segmento)&(SegDepIntfijo['CODIGO_DEPARTAMENTO'].isin(select_depcomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyDepIntfijo,'CODIGO_DEPARTAMENTO',select_variable,select_depcomp) , use_containter_width=True)   
+               
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:            
                 st.plotly_chart(PlotlyTable(Muni_info(InternetFijo)[1],select_variable.capitalize()),use_container_width=True)
+        with tab3:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_municomp=st.multiselect('Seleccione los municipios a comparar',MUNICIPIOS,[select_muni])
+                SegMuniIntfijo=Muni_info(InternetFijo)[2]
+                SegyMuniIntfijo=SegMuniIntfijo[(SegMuniIntfijo['SEGMENTO']==select_segmento)&(SegMuniIntfijo['CODIGO_MUNICIPIO'].isin(select_municomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyMuniIntfijo,'CODIGO_MUNICIPIO',select_variable,select_municomp) , use_containter_width=True)  
 
 #Televisión por suscripción        
 if select_servicio=='TV por suscripción':
     st.markdown(r"""<div class="titulo"><h2>Televisión por suscripción</h2></div>""",unsafe_allow_html=True)
     if select_ambito=='Nacional':
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3= st.tabs(['Gráfica','Tabla con datos','Mapa'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
@@ -638,7 +694,7 @@ if select_servicio=='TV por suscripción':
 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación Regional'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
@@ -655,11 +711,19 @@ if select_servicio=='TV por suscripción':
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
                 folium_static(MapaRegional(TVporSusReg,periodo,select_reg),width=450) 
+        with tab4:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_regionescomp=st.multiselect('Seleccione las regiones a comparar',REGIONES,[select_reg])
+                SegRegTVporSus=Reg_info(TVporSus)[2]
+                SegyRegTVporSus=SegRegTVporSus[(SegRegTVporSus['SEGMENTO']==select_segmento)&(SegRegTVporSus['REGIÓN'].isin(select_regionescomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyRegTVporSus,'REGIÓN',select_variable,select_regionescomp) , use_containter_width=True)   
 
     if select_ambito=='Departamental':
         
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
@@ -676,16 +740,32 @@ if select_servicio=='TV por suscripción':
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
                 folium_static(MapaMunicipal(TVporSusMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+        with tab4:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_depcomp=st.multiselect('Seleccione los departamentos a comparar',DEPARTAMENTOS,[select_dpto])
+                SegDepTVporSus=Dep_info(TVporSus)[2]
+                SegyDepTVporSus=SegDepTVporSus[(SegDepTVporSus['SEGMENTO']==select_segmento)&(SegDepTVporSus['CODIGO_DEPARTAMENTO'].isin(select_depcomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyDepTVporSus,'CODIGO_DEPARTAMENTO',select_variable,select_depcomp) , use_containter_width=True)   
 
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(TVporSus)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Muni_info(TVporSus)[1],select_variable.capitalize()),use_container_width=True)
+        with tab3:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_municomp=st.multiselect('Seleccione los municipios a comparar',MUNICIPIOS,[select_muni])
+                SegMuniTVporSus=Muni_info(TVporSus)[2]
+                SegyMuniTVporSus=SegMuniTVporSus[(SegMuniTVporSus['SEGMENTO']==select_segmento)&(SegMuniTVporSus['CODIGO_MUNICIPIO'].isin(select_municomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyMuniTVporSus,'CODIGO_MUNICIPIO',select_variable,select_municomp) , use_containter_width=True)  
 
 #Telefonía fija       
 if select_servicio=='Telefonía fija':
@@ -712,7 +792,7 @@ if select_servicio=='Telefonía fija':
                     
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación regional'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
@@ -729,11 +809,19 @@ if select_servicio=='Telefonía fija':
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
                 folium_static(MapaRegional(TelfijaReg,periodo,select_reg),width=450) 
+        with tab4:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_regionescomp=st.multiselect('Seleccione las regiones a comparar',REGIONES,[select_reg])
+                SegRegTelfija=Reg_info(Telfija)[2]
+                SegyRegTelfija=SegRegTelfija[(SegRegTelfija['SEGMENTO']==select_segmento)&(SegRegTelfija['REGIÓN'].isin(select_regionescomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyRegTelfija,'REGIÓN',select_variable,select_regionescomp) , use_containter_width=True)   
 
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
 
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
@@ -750,16 +838,32 @@ if select_servicio=='Telefonía fija':
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
                 folium_static(MapaMunicipal(TelfijaMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+        with tab4:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_depcomp=st.multiselect('Seleccione los departamentos a comparar',DEPARTAMENTOS,[select_dpto])
+                SegDepTelfija=Dep_info(Telfija)[2]
+                SegyDepTelfija=SegDepTelfija[(SegDepTelfija['SEGMENTO']==select_segmento)&(SegDepTelfija['CODIGO_DEPARTAMENTO'].isin(select_depcomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyDepTelfija,'CODIGO_DEPARTAMENTO',select_variable,select_depcomp) , use_containter_width=True)   
                                 
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2 = st.tabs(['Gráfica','Tabla con datos'])
+        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(Telfija)[0],select_variable), use_container_width=True)
         with tab2:
             col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 st.plotly_chart(PlotlyTable(Muni_info(Telfija)[1],select_variable.capitalize()),use_container_width=True) 
+        with tab3:
+            col1,col2,col3=st.columns([1,1.5,1])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                select_municomp=st.multiselect('Seleccione los municipios a comparar',MUNICIPIOS,[select_muni])
+                SegMuniTelfija=Muni_info(Telfija)[2]
+                SegyMuniTelfija=SegMuniTelfija[(SegMuniTelfija['SEGMENTO']==select_segmento)&(SegMuniTelfija['CODIGO_MUNICIPIO'].isin(select_municomp))]
+                st.plotly_chart(PlotlyLineasComparacion(SegyMuniTelfija,'CODIGO_MUNICIPIO',select_variable,select_municomp) , use_containter_width=True)  
 
 #Servicios empaquetados                
 if select_servicio=='Empaquetados':
