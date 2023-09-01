@@ -175,7 +175,18 @@ def PlotlyBarrasSegmento(df,column):
         df[column] = round(df[column] / 1e6,2)
     else:
         y_title = f"{column}"
-
+    max_val = df[column].max()
+    min_val = df[column].min()    
+    df['texto']=df[column].map('{:,.2f}'.format).astype('str').str.replace('.', '#')
+    df['texto']=df['texto'].str.replace(',', '.')
+    df['texto']=df['texto'].str.replace('#', ',')
+    
+    step = (max_val - min_val) / (10 - 1)
+    num_values = [round(min_val + i * step,1) for i in range(10)]
+    tv = ['{:,.1f}'.format(number) for number in num_values]
+    text_values = [str(num).replace('.', '#').replace(',', '.').replace('#', ',') for num in tv]
+    
+    
     paleta_colores={'Residencial':"#FF7A48","Corporativo":"#0593A2","Total":"#E3371E"}
     if column=='NÚMERO EMPRESAS':
         SEG=["Residencial","Corporativo","Total"]
@@ -199,13 +210,13 @@ def PlotlyBarrasSegmento(df,column):
     
     fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickformat=',d')
-    fig.update_layout(yaxis_tickformat = '0,.0f')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
+    fig.update_yaxes(tickvals=num_values, ticktext=text_values)
     if column!='NÚMERO EMPRESAS':       
         fig.update_layout(barmode='stack')   
         fig.add_trace(go.Scatter(x=df[df['SEGMENTO']==segmento]['PERIODO'],y=df[df['SEGMENTO']=='Total'][column].map('{:,.2f}'.format),
-                                 mode='text',text=df[df['SEGMENTO']=='Total'][column].map('{:,.2f}'.format),textposition='top center',
-                    textfont=dict(color='black', size=14),name=None,showlegend=False))        
+                                 mode='text',text=df[df['SEGMENTO']=='Total']['texto'],
+                                 textposition='top center',textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
 
 def PlotlyLineasComparacion(df,ambito,column,complist):
@@ -219,10 +230,21 @@ def PlotlyLineasComparacion(df,ambito,column,complist):
         df[column] = round(df[column] / 1e6,2)
     else:
         y_title = f"{column}"
+    max_val = df[column].max()
+    min_val = df[column].min()    
+    df['texto']=df[column].map('{:,.2f}'.format).astype('str').str.replace('.', '#')
+    df['texto']=df['texto'].str.replace(',', '.')
+    df['texto']=df['texto'].str.replace('#', ',')
+    
+    step = (max_val - min_val) / (10 - 1)
+    num_values = [round(min_val + i * step,1) for i in range(10)]
+    tv = ['{:,.1f}'.format(number) for number in num_values]
+    text_values = [str(num).replace('.', '#').replace(',', '.').replace('#', ',') for num in tv]
 
     for x_comp in complist:
         dfcomp=df[df[ambito]==x_comp]
-        fig.add_trace(go.Scatter(x=dfcomp['PERIODO'], y=dfcomp[column],name=x_comp))
+        fig.add_trace(go.Scatter(x=dfcomp['PERIODO'], y=dfcomp[column],name=x_comp,
+                                 line=dict(width=3),marker=dict(size=7)))
     fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
@@ -236,8 +258,7 @@ def PlotlyLineasComparacion(df,ambito,column,complist):
     'yanchor': 'top'})
     fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickformat=',d')
-    fig.update_layout(yaxis_tickformat = '0,.2f')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values)
     return fig
 
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
@@ -287,7 +308,11 @@ def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
 
 def PlotlyTable(df,title):
     for cols in [x for x in df.columns if x!='PERIODO']:
-        df[cols]=df[cols].astype(float).map('{:,.0f}'.format)
+        df[cols] = df[cols].astype(float).map('{:,.0f}'.format).astype('str')
+        df[cols] = df[cols].str.replace('.', '#')
+        df[cols] = df[cols].str.replace(',', '.')
+        df[cols] = df[cols].str.replace('#', ',')        
+        
     table = go.Table(columnwidth=[300,500,500,500],header=dict(values="<b>"+df.columns+"</b>",
                                  fill_color='#2e297b',
                 align='center',font=dict(color='white', size=15, family='Tahoma'),height=50),
@@ -303,7 +328,10 @@ def PlotlyTable(df,title):
 
 def PlotlyTableEmpaquetados(df,title):
     for cols in [x for x in df.columns if x not in ['PERIODO','SERVICIO_PAQUETE']]:
-        df[cols]=df[cols].astype(float).map('{:,.0f}'.format)
+        df[cols] = df[cols].astype(float).map('{:,.0f}'.format).astype('str')
+        df[cols] = df[cols].str.replace('.', '#')
+        df[cols] = df[cols].str.replace(',', '.')
+        df[cols] = df[cols].str.replace('#', ',')          
     table = go.Table(columnwidth=[300,500,500,500],header=dict(values="<b>"+df.columns+"</b>",
                                  fill_color='#2e297b',
                 align='center',font=dict(color='white', size=15, family='Tahoma'),height=50),
