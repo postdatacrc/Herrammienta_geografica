@@ -39,7 +39,7 @@ h1{ background: #f42e62;
     margin-top:135px;
 }
 .e16nr0p31 {display:none}
-.css-2ewto4 {width : 10%}
+.css-2ewto4 {width : auto! important}
 .css-y3whyl, .css-xqnn38 {background-color:#ccc}
 .e8zbici0 {display:none}
 .e8zbici2 {display:none} 
@@ -50,7 +50,7 @@ h1{ background: #f42e62;
     align-items:center;
 }
 .e1fqkh3o2{
-    padding-top:2.5rem;   
+    position:absolute;   
 }
 .css-52bwht{
     gap:0.01rem;
