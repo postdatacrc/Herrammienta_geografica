@@ -694,7 +694,7 @@ if select_servicio=='Internet Fijo':
                 select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
                 IntFijoNacTec=Nac_info(InternetFijo)[2]
                 IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento]             
-                st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable))
+            st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable),use_containter_width=True)
                 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -729,7 +729,7 @@ if select_servicio=='Internet Fijo':
                 select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
                 IntFijoRegTec=Reg_info(InternetFijo)[3]
                 IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
-                st.plotly_chart(PlotlyLineasTecnologia(IntFijoRegTec,select_variable))
+                st.plotly_chart(PlotlyLineasTecnologia(IntFijoRegTec,select_variable),use_containter_width=True)
 
                           
     if select_ambito=='Departamental':
@@ -765,7 +765,7 @@ if select_servicio=='Internet Fijo':
                 select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
                 IntFijoDepTec=Dep_info(InternetFijo)[3]
                 IntFijoDepTec=IntFijoDepTec[(IntFijoDepTec['SEGMENTO']==select_segmento)&(IntFijoDepTec['CODIGO_DEPARTAMENTO']==select_dpto)]             
-                st.plotly_chart(PlotlyLineasTecnologia(IntFijoDepTec,select_variable))
+                st.plotly_chart(PlotlyLineasTecnologia(IntFijoDepTec,select_variable),use_containter_width=True)
 
                
     if select_ambito=='Municipal':
@@ -791,7 +791,7 @@ if select_servicio=='Internet Fijo':
                 select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
                 IntFijoMuniTec=Muni_info(InternetFijo)[3]
                 IntFijoMuniTec=IntFijoMuniTec[(IntFijoMuniTec['SEGMENTO']==select_segmento)&(IntFijoMuniTec['CODIGO_MUNICIPIO']==select_muni)]             
-                st.plotly_chart(PlotlyLineasTecnologia(IntFijoMuniTec,select_variable))
+                st.plotly_chart(PlotlyLineasTecnologia(IntFijoMuniTec,select_variable),use_containter_width=True)
 
 #Televisión por suscripción        
 if select_servicio=='TV por suscripción':
