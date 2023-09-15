@@ -261,6 +261,48 @@ def PlotlyLineasComparacion(df,ambito,column,complist):
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values)
     return fig
 
+def PlotlyLineasTecnologia(df,column):
+    fig=make_subplots(rows=1,cols=1)
+    mean_val = df[column].mean()
+    if mean_val >= 1e9:
+        y_title = f"{column} (Miles de Millones)"
+        df[column] = round(df[column] / 1e9,2)
+    elif mean_val >= 1e6:
+        y_title = f"{column} (Millones)"
+        df[column] = round(df[column] / 1e6,2)
+    else:
+        y_title = f"{column}"
+    max_val = df[column].max()
+    min_val = df[column].min()    
+    df['texto']=df[column].map('{:,.2f}'.format).astype('str').str.replace('.', '#')
+    df['texto']=df['texto'].str.replace(',', '.')
+    df['texto']=df['texto'].str.replace('#', ',')
+    
+    step = (max_val - min_val) / (10 - 1)
+    num_values = [round(min_val + i * step,1) for i in range(10)]
+    tv = ['{:,.1f}'.format(number) for number in num_values]
+    text_values = [str(num).replace('.', '#').replace(',', '.').replace('#', ',') for num in tv]
+
+    for tec in df['TECNOLOGIA'].unique():
+        dftec=df[df['TECNOLOGIA']==tec]
+        fig.add_trace(go.Scatter(x=dftec['PERIODO'], y=dftec[column],name=tec,
+                                 line=dict(width=3),marker=dict(size=7)))
+    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
+    fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
+    ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
+    fig.update_layout(height=550,legend_title=None)
+    fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+    title={
+    'text':"<b>"+select_variable.capitalize()+"<br>("+select_servicio+")</b>",
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top'})
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values)
+    return fig
+
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
     if df[df['SERVICIO_PAQUETE'].isin(select_empaquetados)].empty==True:
         df2=df
@@ -512,8 +554,11 @@ def Nac_info(df):
     df.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
     dfNac=dfNac.rename(columns=dict_variables)
     dfNac2=pd.pivot(dfNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
-    dfNac2_html = f'<div class="styled-table">{dfNac2.to_html(index=False)}</div>'
-    return dfNac, dfNac2
+    #dfNac2_html = f'<div class="styled-table">{dfNac2.to_html(index=False)}</div>'
+    dfNacTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','TECNOLOGIA']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','TECNOLOGIA']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfNacTec=dfNacTec.rename(columns=dict_variables)    
+    return dfNac, dfNac2, dfNacTec
 
 def Reg_info(df):
     dfReg=pd.concat([df.groupby(['PERIODO', 'CODSEG','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -606,7 +651,7 @@ select_servicio=st.radio('Servicio',['Internet Fijo','TV por suscripción','Tele
 if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
     if select_ambito=='Nacional':
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Mapa'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Información por tecnología'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -622,7 +667,15 @@ if select_servicio=='Internet Fijo':
             col1,col2,col3=st.columns([0.5,2,0.5])
             with col2:
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaNacional(InternetFijoDep,periodo))        
+                folium_static(MapaNacional(InternetFijoDep,periodo))  
+        with tab4:
+            col1,col2,col3=st.columns([0.5,1,0.5])
+            with col2:
+                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                IntFijoNacTec=Nac_info(InternetFijo)[2]
+                IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento]
+            AgGrid(IntFijoNacTec.head())              
+            st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable))
                 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -650,7 +703,7 @@ if select_servicio=='Internet Fijo':
                 select_regionescomp=st.multiselect('Seleccione las regiones a comparar',REGIONES,[select_reg])
                 SegRegIntfijo=Reg_info(InternetFijo)[2]
                 SegyRegIntfijo=SegRegIntfijo[(SegRegIntfijo['SEGMENTO']==select_segmento)&(SegRegIntfijo['REGIÓN'].isin(select_regionescomp))]
-                st.plotly_chart(PlotlyLineasComparacion(SegyRegIntfijo,'REGIÓN',select_variable,select_regionescomp) , use_containter_width=True)   
+            st.plotly_chart(PlotlyLineasComparacion(SegyRegIntfijo,'REGIÓN',select_variable,select_regionescomp) , use_containter_width=True)   
                           
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
