@@ -60,6 +60,14 @@ def T13(allow_output_mutation=True):
     FT_13['CODIGO_MUNICIPIO']=FT_13['MUNICIPIO']+'-'+FT_13['ID_MUNICIPIO'].astype('str')
     FT_13['PERIODO']=FT_13['ANNO'].astype('str')+'-T'+FT_13['TRIMESTRE'].astype('str')
     FT_13['CODSEG']=np.where(FT_13['ID_SEGMENTO'].isin([101,102,103,104,105,106]),'Residencial','Corporativo')
+    FT_13['CODTEC']=None
+    FT_13['CODTEC']=np.where(FT_13.ID_TECNOLOGIA.isin([114,105,104]),'Inalambrico',FT_13['CODTEC'])
+    FT_13['CODTEC']=np.where(FT_13.ID_TECNOLOGIA.isin([102,106]),'Cable',FT_13['CODTEC'])
+    FT_13['CODTEC']=np.where(FT_13.ID_TECNOLOGIA.isin([103]),'Satelital',FT_13['CODTEC'])
+    FT_13['CODTEC']=np.where(FT_13.ID_TECNOLOGIA.isin([107,108,109,110,111,112,113]),'Fibra Óptica',FT_13['CODTEC'])
+    FT_13['CODTEC']=np.where(FT_13.ID_TECNOLOGIA.isin([101]),'xDSL',FT_13['CODTEC'])
+    FT_13['CODTEC']=np.where(FT_13.ID_TECNOLOGIA.isin([115]),'Otras',FT_13['CODTEC'])
+    FT_13['CODTEC']=np.where(FT_13.ID_TECNOLOGIA.isin([999]),'No Aplica',FT_13['CODTEC'])
 
     dict_regiones = {
         'REGIÓN ANDINA': [5, 11, 15, 17, 25, 41, 54, 63, 66, 68, 73],
@@ -282,18 +290,19 @@ def PlotlyLineasTecnologia(df,column):
     num_values = [round(min_val + i * step,1) for i in range(10)]
     tv = ['{:,.1f}'.format(number) for number in num_values]
     text_values = [str(num).replace('.', '#').replace(',', '.').replace('#', ',') for num in tv]
-
-    for tec in df['TECNOLOGIA'].unique():
-        dftec=df[df['TECNOLOGIA']==tec]
+    dict_colorest_tec={'Cable':'rgb(255, 51, 51)','Fibra Óptica':'rgb(255, 153, 51)','Inalambrico':'rgb(153,255,51)',
+                       'Satelital':'rgb(153,51,255)','xDSL':'rgb(51, 153, 255)','Otras':'Black'}
+    for tec in df['CODTEC'].unique():
+        dftec=df[df['CODTEC']==tec]
         fig.add_trace(go.Scatter(x=dftec['PERIODO'], y=dftec[column],name=tec,
-                                 line=dict(width=3),marker=dict(size=7)))
+                                 line=dict(width=3),marker=dict(size=7,color=dict_colorest_tec[tec])))
     fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
     fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2)
     fig.update_layout(height=550,legend_title=None)
     fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
     title={
-    'text':"<b>"+select_variable.capitalize()+"<br>("+select_servicio+")</b>",
+    'text':"<b>"+select_variable.capitalize()+" por tecnología"+"<br>("+select_servicio+")</b>",
     'y':0.95,
     'x':0.5,
     'xanchor': 'center',
@@ -555,9 +564,9 @@ def Nac_info(df):
     dfNac=dfNac.rename(columns=dict_variables)
     dfNac2=pd.pivot(dfNac[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
     #dfNac2_html = f'<div class="styled-table">{dfNac2.to_html(index=False)}</div>'
-    dfNacTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','TECNOLOGIA']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
-    df.groupby(['PERIODO','TECNOLOGIA']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
-    dfNacTec=dfNacTec.rename(columns=dict_variables)    
+    dfNacTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODTEC']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','CODTEC']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfNacTec=dfNacTec[dfNacTec['CODTEC']!='No Aplica'].rename(columns=dict_variables)    
     return dfNac, dfNac2, dfNacTec
 
 def Reg_info(df):
@@ -566,8 +575,12 @@ def Reg_info(df):
     dfReg=dfReg.rename(columns=dict_variables)
     dfReg_s=dfReg[dfReg['REGIÓN']==select_reg]
     dfReg2=pd.pivot(dfReg_s[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
-    dfDep2_html = f'<div class="styled-table">{dfReg2.to_html(index=False)}</div>'
-    return dfReg_s,dfReg2,dfReg
+    #dfDep2_html = f'<div class="styled-table">{dfReg2.to_html(index=False)}</div>'
+    dfRegTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODTEC','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','CODTEC','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfRegTec=dfRegTec[dfRegTec['CODTEC']!='No Aplica'].rename(columns=dict_variables)
+
+    return dfReg_s,dfReg2,dfReg,dfRegTec
 
 def Dep_info(df):
     dfDep=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -575,8 +588,11 @@ def Dep_info(df):
     dfDep=dfDep.rename(columns=dict_variables)
     dfDep_s=dfDep[dfDep['CODIGO_DEPARTAMENTO']==select_dpto]
     dfDep2=pd.pivot(dfDep_s[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
-    dfDep2_html = f'<div class="styled-table">{dfDep2.to_html(index=False)}</div>'
-    return dfDep_s,dfDep2,dfDep
+    #dfDep2_html = f'<div class="styled-table">{dfDep2.to_html(index=False)}</div>'
+    dfDepTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODTEC','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','CODTEC','CODIGO_DEPARTAMENTO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfDepTec=dfDepTec[dfDepTec['CODTEC']!='No Aplica'].rename(columns=dict_variables)
+    return dfDep_s,dfDep2,dfDep,dfDepTec
 
 def Muni_info(df):
     dfMUNI=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -584,8 +600,12 @@ def Muni_info(df):
     dfMUNI=dfMUNI.rename(columns=dict_variables)
     dfMUNI_s=dfMUNI[dfMUNI['CODIGO_MUNICIPIO']==select_muni]
     dfMUNI2=pd.pivot(dfMUNI_s[['PERIODO','SEGMENTO',select_variable]], index=['PERIODO'], columns=['SEGMENTO'], values=select_variable).reset_index().fillna(0)
-    dfMUNI2_html = f'<div class="styled-table">{dfMUNI2.to_html(index=False)}</div>' 
-    return dfMUNI_s,dfMUNI2,dfMUNI
+    #dfMUNI2_html = f'<div class="styled-table">{dfMUNI2.to_html(index=False)}</div>' 
+    dfMUNITec=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODTEC','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
+    df.groupby(['PERIODO','CODTEC','CODIGO_MUNICIPIO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
+    dfMUNITec=dfMUNITec[dfMUNITec['CODTEC']!='No Aplica'].rename(columns=dict_variables)
+
+    return dfMUNI_s,dfMUNI2,dfMUNI,dfMUNITec
 
 #Botón ámbito
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Regional','Departamental','Municipal'])
@@ -651,7 +671,7 @@ select_servicio=st.radio('Servicio',['Internet Fijo','TV por suscripción','Tele
 if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
     if select_ambito=='Nacional':
-        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Información por tecnología'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Tecnología'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -669,17 +689,16 @@ if select_servicio=='Internet Fijo':
                 periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
                 folium_static(MapaNacional(InternetFijoDep,periodo))  
         with tab4:
-            col1,col2,col3=st.columns([0.5,1,0.5])
+            col1,col2,col3=st.columns([0.1,1,0.1])
             with col2:
                 select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
                 IntFijoNacTec=Nac_info(InternetFijo)[2]
-                IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento]
-            AgGrid(IntFijoNacTec.head())              
-            st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable))
+                IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento]             
+                st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable))
                 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación regional'])
+        tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación regional','Tecnología'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -704,10 +723,18 @@ if select_servicio=='Internet Fijo':
                 SegRegIntfijo=Reg_info(InternetFijo)[2]
                 SegyRegIntfijo=SegRegIntfijo[(SegRegIntfijo['SEGMENTO']==select_segmento)&(SegRegIntfijo['REGIÓN'].isin(select_regionescomp))]
             st.plotly_chart(PlotlyLineasComparacion(SegyRegIntfijo,'REGIÓN',select_variable,select_regionescomp) , use_containter_width=True)   
+        with tab5:
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                IntFijoRegTec=Reg_info(InternetFijo)[3]
+                IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
+                st.plotly_chart(PlotlyLineasTecnologia(IntFijoRegTec,select_variable))
+
                           
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental'])
+        tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental','Tecnología'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -732,10 +759,18 @@ if select_servicio=='Internet Fijo':
                 SegDepIntfijo=Dep_info(InternetFijo)[2]
                 SegyDepIntfijo=SegDepIntfijo[(SegDepIntfijo['SEGMENTO']==select_segmento)&(SegDepIntfijo['CODIGO_DEPARTAMENTO'].isin(select_depcomp))]
                 st.plotly_chart(PlotlyLineasComparacion(SegyDepIntfijo,'CODIGO_DEPARTAMENTO',select_variable,select_depcomp) , use_containter_width=True)   
+        with tab5:
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                IntFijoDepTec=Dep_info(InternetFijo)[3]
+                IntFijoDepTec=IntFijoDepTec[(IntFijoDepTec['SEGMENTO']==select_segmento)&(IntFijoDepTec['CODIGO_DEPARTAMENTO']==select_dpto)]             
+                st.plotly_chart(PlotlyLineasTecnologia(IntFijoDepTec,select_variable))
+
                
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal'])
+        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal','Tecnología'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -750,6 +785,13 @@ if select_servicio=='Internet Fijo':
                 SegMuniIntfijo=Muni_info(InternetFijo)[2]
                 SegyMuniIntfijo=SegMuniIntfijo[(SegMuniIntfijo['SEGMENTO']==select_segmento)&(SegMuniIntfijo['CODIGO_MUNICIPIO'].isin(select_municomp))]
                 st.plotly_chart(PlotlyLineasComparacion(SegyMuniIntfijo,'CODIGO_MUNICIPIO',select_variable,select_municomp) , use_containter_width=True)  
+        with tab4:
+            col1,col2,col3=st.columns([0.1,1,0.1])
+            with col2:
+                select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+                IntFijoMuniTec=Muni_info(InternetFijo)[3]
+                IntFijoMuniTec=IntFijoMuniTec[(IntFijoMuniTec['SEGMENTO']==select_segmento)&(IntFijoMuniTec['CODIGO_MUNICIPIO']==select_muni)]             
+                st.plotly_chart(PlotlyLineasTecnologia(IntFijoMuniTec,select_variable))
 
 #Televisión por suscripción        
 if select_servicio=='TV por suscripción':
