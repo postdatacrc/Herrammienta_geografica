@@ -22,6 +22,9 @@ h1{ background: #f42e62;
     top:80px;
     left:0;
 }
+iframe{
+    width: inherit;
+}
 .barra-superior{top: 0;
     position: fixed;
     background-color: #2e297b;
@@ -36,7 +39,10 @@ h1{ background: #f42e62;
     font-weight: 700;
 }
 .css-1wrcr25{
-    margin-top:135px;
+    margin-top:80px;
+}
+.css-hxt7ib{
+    padding-top: 3rem;
 }
 .e16nr0p31 {display:none}
 .css-2ewto4 {width : auto! important}

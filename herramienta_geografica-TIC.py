@@ -24,21 +24,25 @@ st.set_page_config(
 
 with open('style.css') as f:
     st.markdown(f'<style>{f.read()}</style>',unsafe_allow_html=True)
+st.markdown("""
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+            """,unsafe_allow_html=True)
 
 Barra_superior="""
 <div class="barra-superior">
-    <div class="imagen-flotar" style="height: 70px; left: 10px; padding:15px">
+    <div class="imagen-flotar" style="height: 70px; width:inherit; padding:15px">
         <a class="imagen-flotar" style="float:left;" href="https://www.crcom.gov.co" title="CRC">
             <img src="https://www.postdata.gov.co/sites/all/themes/nuboot_radix/logo-crc-blanco.png" alt="CRC" style="height:40px">
         </a>
         <a class="imagen-flotar" style="padding-left:10px;" href="https://www.postdata.gov.co" title="Postdata">
             <img src="https://www.postdata.gov.co/sites/default/files/postdata-logo.png" alt="Inicio" style="height:40px">
         </a>
+        <div>Herramienta geográfica Telecomunicaciones</div>
     </div>
 </div>"""
 st.markdown(Barra_superior,unsafe_allow_html=True)
 
-st.markdown("""<h1>Herramienta geográfica Telecomunicaciones</h1>""",unsafe_allow_html=True)
 st.sidebar.markdown("""<b>Menú</b>""", unsafe_allow_html=True)
 
 #Función para traer base
@@ -291,20 +295,20 @@ def PlotlyLineasTecnologia(df,column):
         dftec=df[df['CODTEC']==tec]
         fig.add_trace(go.Scatter(x=dftec['PERIODO'], y=dftec[column],name=tec,
                                  line=dict(width=3),marker=dict(size=7,color=dict_colorest_tec[tec])))
-    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
-    fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
-    ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2,automargin=True)
-    fig.update_layout(legend_title=None)
-    fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
-    title={
-    'text':"<b>"+select_variable.capitalize()+" por tecnología"+"<br>("+select_servicio+")</b>",
-    'y':0.95,
-    'x':0.5,
-    'xanchor': 'center',
-    'yanchor': 'top'})
-    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
-    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values)
+    #fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
+    #fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
+    #,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2,automargin=True)
+    #fig.update_layout(legend_title=None)
+    #fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+    #title={
+    #'text':"<b>"+select_variable.capitalize()+" por tecnología"+"<br>("+select_servicio+")</b>",
+    #'y':0.95,
+    #'x':0.5,
+    #'xanchor': 'center',
+    #'yanchor': 'top'})
+    #fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
+    #fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+    #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values)
     return fig
 
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
@@ -683,17 +687,19 @@ if select_servicio=='Internet Fijo':
             else:
                 pass
             InternetFijoDep=InternetFijo.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([0.5,2,0.5])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaNacional(InternetFijoDep,periodo))  
+            #col1,col2,col3=st.columns([0.5,2,0.5])
+            #with col2:
+            periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+            folium_static(MapaNacional(InternetFijoDep,periodo))  
         with tab4:
-            col1,col2,col3=st.columns([0.1,1,0.1])
-            with col2:
-                select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+            #col1,col2,col3=st.columns([0.1,1,0.1])
+            #with col2:
+            select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
             IntFijoNacTec=Nac_info(InternetFijo)[2]
-            IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento]            
-            st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable),use_containter_width=True)
+            IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento] 
+            fig=px.line(IntFijoNacTec[IntFijoNacTec['SEGMENTO']=='Total'],x='PERIODO',y='ACCESOS',color='CODTEC')       
+            #st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable),use_containter_width=True)
+            st.plotly_chart(fig,use_container_width=True)
                 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -710,10 +716,10 @@ if select_servicio=='Internet Fijo':
             else:
                 pass
             InternetFijoReg=InternetFijo.groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaRegional(InternetFijoReg,periodo,select_reg),width=450)
+            #col1,col2,col3=st.columns([1,1.5,1])
+            #with col2:
+            periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+            folium_static(MapaRegional(InternetFijoReg,periodo,select_reg),width=450)
         with tab4:
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
