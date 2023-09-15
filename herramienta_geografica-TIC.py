@@ -30,17 +30,16 @@ st.markdown("""
             """,unsafe_allow_html=True)
 
 Barra_superior="""
-<div class="barra-superior">
-    <div class="imagen-flotar" style="height: 70px; width:inherit; padding:15px">
-        <a class="imagen-flotar" style="float:left;" href="https://www.crcom.gov.co" title="CRC">
-            <img src="https://www.postdata.gov.co/sites/all/themes/nuboot_radix/logo-crc-blanco.png" alt="CRC" style="height:40px">
-        </a>
-        <a class="imagen-flotar" style="padding-left:10px;" href="https://www.postdata.gov.co" title="Postdata">
-            <img src="https://www.postdata.gov.co/sites/default/files/postdata-logo.png" alt="Inicio" style="height:40px">
-        </a>
-        <div>Herramienta geográfica Telecomunicaciones</div>
-    </div>
-</div>"""
+    <div class="barra-superior align-items-center row">
+    <div class="col text-centerms-3"><a href="https://www.crcom.gov.co" title="CRC" target="_blank" rel="noopener noreferrer">
+    <img src="https://www.postdata.gov.co/sites/all/themes/nuboot_radix/logo-crc-blanco.png" alt="CRC" style="height: 40px;">
+    </a></div>
+    <div class="col text-center"><a href="https://www.postdata.gov.co" title="Postdata" target="_blank" rel="noopener noreferrer">
+    <img src="https://www.postdata.gov.co/sites/default/files/postdata-logo.png" alt="Inicio" style="height: 40px;">
+    </a></div>
+    <div class="col-9 text-center fs-2 d-none d-xl-block">Herramienta geográfica Telecomunicaciones</div>
+    <div class="col-12 text-center fs-3 d-block d-xl-none">Herramienta geográfica</div></div>
+"""
 st.markdown(Barra_superior,unsafe_allow_html=True)
 
 st.sidebar.markdown("""<b>Menú</b>""", unsafe_allow_html=True)
