@@ -454,14 +454,20 @@ def MapaMunicipal(df,periodo,codigo_dep):
     mapaporDep=mapaporDep.merge(Hogares,on=['ID_MUNICIPIO'])
     mapaporDep['PENETRACION']=round(100*mapaporDep['CANTIDAD_LINEAS_ACCESOS']/mapaporDep['HOGARES'],2)
     mapaporDep=mapaporDep[mapaporDep['DPTO_CCDGO']==codigo_dep]
-    
+    #
+    filtered_lines = []
+    for feature in Colombian_MUNI['features']:
+        if feature['properties']['DPTO_CCDGO'] == codigo_dep:
+            filtered_lines.append(feature)
+    Colombian_MUNI_sliced={'features':filtered_lines}
+    Colombian_MUNI_sliced['type']='FeatureCollection'    
     # create a plain world map
-    Dep_map = folium.Map(location=centroid_dep(codigo_dep), zoom_start=7,tiles='cartodbpositron')
+    Dep_map = folium.Map(location=centroid_dep(codigo_dep), zoom_start=8,tiles='cartodbpositron')
     tiles = ['stamenwatercolor', 'cartodbpositron', 'openstreetmap', 'stamenterrain']
     for tile in tiles:
         folium.TileLayer(tile).add_to(Dep_map)
     choropleth=folium.Choropleth(
-        geo_data=Colombian_MUNI,
+        geo_data=Colombian_MUNI_sliced,
         data=mapaporDep,
         columns=['ID_MUNICIPIO', 'PENETRACION'],
         key_on='feature.properties.MPIO_CCNCT',
@@ -477,7 +483,7 @@ def MapaMunicipal(df,periodo,codigo_dep):
         folium.features.GeoJsonTooltip(['MPIO_CCNCT'], style=style_function, labels=False))
     folium.LayerControl().add_to(Dep_map)
 
-    #Adicionar valores 
+    #Adicionar valores porcentaje
     style_function = lambda x: {'fillColor': '#ffffff', 
                                 'color':'#000000', 
                                 'fillOpacity': 0.1, 
