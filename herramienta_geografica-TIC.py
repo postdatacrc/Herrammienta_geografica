@@ -462,7 +462,7 @@ def MapaMunicipal(df,periodo,codigo_dep):
     Colombian_MUNI_sliced={'features':filtered_lines}
     Colombian_MUNI_sliced['type']='FeatureCollection'    
     # create a plain world map
-    Dep_map = folium.Map(location=centroid_dep(codigo_dep), zoom_start=8,tiles='cartodbpositron')
+    Dep_map = folium.Map(location=centroid_dep(codigo_dep), zoom_start=7,tiles='cartodbpositron')
     tiles = ['stamenwatercolor', 'cartodbpositron', 'openstreetmap', 'stamenterrain']
     for tile in tiles:
         folium.TileLayer(tile).add_to(Dep_map)
