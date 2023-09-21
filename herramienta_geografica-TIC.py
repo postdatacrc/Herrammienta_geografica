@@ -12,6 +12,7 @@ from streamlit_folium import folium_static
 from st_aggrid import AgGrid
 import geopandas as gpd
 import folium
+import altair as alt
 import urllib
 from streamlit_folium import folium_static
 #from streamlit_option_menu import option_menu
@@ -49,7 +50,7 @@ st.sidebar.markdown("""<b>Menú</b>""", unsafe_allow_html=True)
 def T13(allow_output_mutation=True):
     url_bases = 'https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/Bases_T13/'
     dfT13 = []
-    for i in range(9):
+    for i in range(13):
         file_name = f'T1_3-{i}.csv'
         file_url = os.path.join(url_bases, file_name)
         base = pd.read_csv(file_url, delimiter=';')
@@ -82,10 +83,12 @@ def T13(allow_output_mutation=True):
                 return region
         return 'Error'
     FT_13['REGIÓN'] = FT_13['ID_DEPARTAMENTO'].map(clas_region) 
-    FT_13=FT_13[FT_13['ANNO']==2022]   
+    #FT_13=FT_13[FT_13['ANNO']==2022]   
     
     return FT_13
 FT1_3=T13()
+
+
 
 MUNICIPIOS=sorted(FT1_3['CODIGO_MUNICIPIO'].unique().tolist())
 DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
@@ -169,6 +172,9 @@ Empaquetados['SERVICIO_PAQUETE']=Empaquetados['SERVICIO_PAQUETE'].replace({'Inte
                                                                            'Duo Play 3 (Telefonía fija y TV por suscripción)':'Duo Play 3', 
                                                                            'Triple Play (Telefonía fija + Internet fijo + TV por suscripción)':'Triple Play'})
 
+dict_colorest_tec={'Cable':'rgb(255, 51, 51)','Fibra Óptica':'rgb(255, 153, 51)','Inalambrico':'rgb(153,255,51)',
+                       'Satelital':'rgb(153,51,255)','xDSL':'rgb(51, 153, 255)','Otras':'Black'}
+
 #Funciones para graficar
 def PlotlyBarrasSegmento(df,column):
     fig=make_subplots(rows=1,cols=1)
@@ -189,7 +195,7 @@ def PlotlyBarrasSegmento(df,column):
     
     step = (max_val - min_val) / (10 - 1)
     num_values = [round(min_val + i * step,1) for i in range(10)]
-    tv = ['{:,.1f}'.format(number) for number in num_values]
+    tv = ['{:,.0f}'.format(number) for number in num_values]
     text_values = [str(num).replace('.', '#').replace(',', '.').replace('#', ',') for num in tv]
     
     
@@ -293,7 +299,8 @@ def PlotlyLineasTecnologia(df,column):
     for tec in df['CODTEC'].unique():
         dftec=df[df['CODTEC']==tec]
         fig.add_trace(go.Scatter(x=dftec['PERIODO'], y=dftec[column],name=tec,
-                                 line=dict(width=3),marker=dict(size=7,color=dict_colorest_tec[tec])))
+                                 line=dict(width=3),marker=dict(size=7,color=dict_colorest_tec[tec])))     
+    #    
     #fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
     #fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
     #,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2,automargin=True)
@@ -308,6 +315,50 @@ def PlotlyLineasTecnologia(df,column):
     #fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     #fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values)
+    return fig
+
+def tecplottest(df,column):
+    fig=make_subplots(rows=1,cols=1)
+    mean_val = df[column].mean()
+    if mean_val >= 1e9:
+        y_title = f"{column} (Miles de Millones)"
+        df[column] = round(df[column] / 1e9,2)
+    elif mean_val >= 1e6:
+        y_title = f"{column} (Millones)"
+        df[column] = round(df[column] / 1e6,2)
+    else:
+        y_title = f"{column}"
+    max_val = df[column].max()
+    min_val = df[column].min()    
+    df['texto']=df[column].map('{:,.2f}'.format).astype('str').str.replace('.', '#')
+    df['texto']=df['texto'].str.replace(',', '.')
+    df['texto']=df['texto'].str.replace('#', ',')
+    
+    step = (max_val - min_val) / (10 - 1)
+    num_values = [round(min_val + i * step,1) for i in range(10)]
+    tv = ['{:,.1f}'.format(number) for number in num_values]
+    text_values = [str(num).replace('.', '#').replace(',', '.').replace('#', ',') for num in tv]    
+      
+    dict_colorest_tec={'Cable':'rgb(255, 51, 51)','Fibra Óptica':'rgb(255, 153, 51)','Inalambrico':'rgb(153,255,51)',
+                       'Satelital':'rgb(153,51,255)','xDSL':'rgb(51, 153, 255)','Otras':'Black'}
+    for tec in df['CODTEC'].unique():
+        dftec=df[df['CODTEC']==tec]
+        fig.add_trace(go.Scatter(x=dftec['PERIODO'], y=dftec[column],name=tec,
+                                 line=dict(width=3),marker=dict(size=7,color=dict_colorest_tec[tec])))   
+    fig.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text=y_title, row=1, col=1)                        
+    fig.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=14),title_font=dict(family="Tahoma"),title_text=None,row=1, col=1
+    ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2,automargin=True)
+    fig.update_layout(legend_title=None)
+    fig.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+    title={
+    'text':"<b>"+column.capitalize()+" por tecnología"+"<br>("+select_servicio+")</b>",
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top'})
+    fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')   
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values) 
     return fig
 
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
@@ -514,14 +565,28 @@ def MapaRegional(df,periodo,region):
     mapaporReg=mapaporReg.merge(Hogares,on=['ID_MUNICIPIO'])
     mapaporReg['PENETRACION']=round(100*mapaporReg['CANTIDAD_LINEAS_ACCESOS']/mapaporReg['HOGARES'],2)
     mapaporReg=mapaporReg[mapaporReg['REGIÓN']==region]
-    
+    #
+    dict_regiones = {
+        'REGIÓN ANDINA': ['05', '11', '15', '17', '25', '41', '54', '63', '66', '68', '73'],
+        'REGIÓN AMAZÓNICA': ['91', '18', '94', '95', '86', '97'],
+        'REGIÓN PACÍFICA': ['76', '27', '19', '52'],
+        'REGIÓN CARIBE': ['08', '13', '20', '23', '44', '47', '70', '88'],
+        'REGIÓN ORINOQUÍA': ['81', '85', '50', '99']
+    }
+
+    filtered_lines_reg = []
+    for feature in Colombian_MUNI['features']:
+        if feature['properties']['DPTO_CCDGO'] in dict_regiones[region]:
+            filtered_lines_reg.append(feature)
+    Colombian_MUNI_sliced_reg={'features':filtered_lines_reg}
+    Colombian_MUNI_sliced_reg['type']='FeatureCollection'     
     # create a plain world map
     Reg_map = folium.Map(location=centroid_reg(region), zoom_start=6,tiles='cartodbpositron')
     tiles = ['stamenwatercolor', 'cartodbpositron', 'openstreetmap', 'stamenterrain']
     for tile in tiles:
         folium.TileLayer(tile).add_to(Reg_map)
     choropleth=folium.Choropleth(
-        geo_data=Colombian_MUNI,
+        geo_data=Colombian_MUNI_sliced_reg,
         data=mapaporReg,
         columns=['ID_MUNICIPIO', 'PENETRACION'],
         key_on='feature.properties.MPIO_CCNCT',
@@ -552,8 +617,8 @@ def MapaRegional(df,periodo,region):
         control=False,
         highlight_function=highlight_function, 
         tooltip=folium.features.GeoJsonTooltip(
-            fields=['MUNICIPIO','ID_MUNICIPIO','PENETRACION'],
-            aliases=['Municipio','ID','Penetración'],
+            fields=['MUNICIPIO','ID_MUNICIPIO','DPTO_CNMBR','PENETRACION'],
+            aliases=['Municipio','ID','DPTO','Penetración'],
             style=("background-color: white; color: #333333; font-family: helvetica; font-size: 12px; padding: 10px;") 
         )
     )
@@ -571,7 +636,8 @@ def Nac_info(df):
     dfNacTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODTEC']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO','CODTEC']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
     dfNacTec=dfNacTec[dfNacTec['CODTEC']!='No Aplica'].rename(columns=dict_variables)    
-    return dfNac, dfNac2, dfNacTec
+    dfNacVel=df.groupby(['PERIODO']).apply(lambda x: np.average(x['VELOCIDAD_EFECTIVA_DOWNSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS'])).reset_index()
+    return dfNac, dfNac2, dfNacTec, dfNacVel
 
 def Reg_info(df):
     dfReg=pd.concat([df.groupby(['PERIODO', 'CODSEG','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
@@ -623,14 +689,16 @@ if select_ambito=='Municipal':
 dict_variables={'CANTIDAD_LINEAS_ACCESOS': 'ACCESOS', 'VALOR_FACTURADO_O_COBRADO': 'VALOR FACTURADO', 'ID_EMPRESA': 'NÚMERO EMPRESAS','CODSEG': 'SEGMENTO'}
 dict_variables_inverse={v: k for k, v in dict_variables.items()}
 select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS']) 
-
+first_variables=['ACCESOS','NÚMERO EMPRESAS','VALOR FACTURADO']
 #Función para calcular métricas del último periodo
 last_period=sorted(FT1_3['PERIODO'].unique().tolist())[-1]
 def metricServ(df, amb, var):
     if var == 'NÚMERO EMPRESAS':
         agg_func = 'nunique'
+    elif var == 'ACCESOS' or var == 'VALOR FACTURADO':
+        agg_func = 'sum'   
     else:
-        agg_func = 'sum'
+        pass
         
     if amb == 'Nacional':
         filter_condition = (df['PERIODO']==last_period)
@@ -642,7 +710,13 @@ def metricServ(df, amb, var):
         filter_condition = (df['PERIODO']==last_period)&(df['REGIÓN'] == select_reg)
     else:
         return "Invalido"
-    Data = df[filter_condition].groupby(['PERIODO']).agg({dict_variables_inverse[var]: agg_func}).reset_index()
+    
+    if var in first_variables: 
+        Data = df[filter_condition].groupby(['PERIODO']).agg({dict_variables_inverse[var]: agg_func}).reset_index()
+    else:
+        pass
+        #Data = df[filter_condition].groupby(['PERIODO']).apply(lambda x: np.average(x[dict_variables_inverse[var]].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']))
+        
     x = Data[dict_variables_inverse[var]].values[0]   
     if x >= 1e12:
         y_title = f"{round(x/1e12, 2)}".replace('.', ',')+" B"
@@ -655,21 +729,24 @@ def metricServ(df, amb, var):
     return y_title
     
 #Estructura con métricas del último periodo
-with st.container():
-    col1,col2,col3,col4,col5,col6=st.columns([0.5,1]*3)
-    with col2:
-        st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/internet-fijo.png'/></div>""",unsafe_allow_html=True) 
-    with col4:
-        st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/telefonia-fija.png'/></div>""",unsafe_allow_html=True) 
-    with col6:
-        st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/tv-por-suscripcion.png'/></div>""",unsafe_allow_html=True) 
+if select_variable in first_variables:
+    with st.container():
+        col1,col2,col3,col4,col5,col6=st.columns([0.5,1]*3)
+        with col2:
+            st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/internet-fijo.png'/></div>""",unsafe_allow_html=True) 
+        with col4:
+            st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/telefonia-fija.png'/></div>""",unsafe_allow_html=True) 
+        with col6:
+            st.markdown(r"""<div><img height="130px" src='https://raw.githubusercontent.com/postdatacrc/Reporte-de-industria/main/Iconos/tv-por-suscripcion.png'/></div>""",unsafe_allow_html=True) 
+            
+        col2.metric("Internet fijo", metricServ(InternetFijo,select_ambito,select_variable))
+        col4.metric("Telefonía fija", metricServ(Telfija,select_ambito,select_variable))
+        col6.metric("TV por suscripción", metricServ(TVporSus,select_ambito,select_variable))
         
-    col2.metric("Internet fijo", metricServ(InternetFijo,select_ambito,select_variable))
-    col4.metric("Telefonía fija", metricServ(Telfija,select_ambito,select_variable))
-    col6.metric("TV por suscripción", metricServ(TVporSus,select_ambito,select_variable))
-    
-    st.markdown(f"<b>Nota</b>: Información para el periodo {last_period}. Tomada del formato T.1.3 de la resolución CRC 5050 de 2016",unsafe_allow_html=True)
-    st.markdown("<b>Unidades</b>: (M) Millones, (MM) Miles de Millones, (B) Billones." ,unsafe_allow_html=True)
+        st.markdown(f"<b>Nota</b>: Información para el periodo {last_period}. Tomada del formato T.1.3 de la resolución CRC 5050 de 2016",unsafe_allow_html=True)
+        st.markdown("<b>Unidades</b>: (M) Millones, (MM) Miles de Millones, (B) Billones." ,unsafe_allow_html=True)
+else:
+    pass        
 st.markdown('<hr>',unsafe_allow_html=True)
 
 #Botón servicio
@@ -697,15 +774,11 @@ if select_servicio=='Internet Fijo':
             periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
             folium_static(MapaNacional(InternetFijoDep,periodo))  
         with tab4:
-            #col1,col2,col3=st.columns([0.1,1,0.1])
-            #with col2:
             select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
             IntFijoNacTec=Nac_info(InternetFijo)[2]
             IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento] 
-            fig=px.line(IntFijoNacTec[IntFijoNacTec['SEGMENTO']=='Total'],x='PERIODO',y='ACCESOS',color='CODTEC')       
-            #st.plotly_chart(PlotlyLineasTecnologia(IntFijoNacTec,select_variable),use_containter_width=True)
-            st.plotly_chart(fig,use_container_width=True)
-                
+            st.plotly_chart(tecplottest(IntFijoNacTec,select_variable),use_container_width=True)
+                           
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
         tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación regional','Tecnología'])
@@ -734,14 +807,11 @@ if select_servicio=='Internet Fijo':
                 SegyRegIntfijo=SegRegIntfijo[(SegRegIntfijo['SEGMENTO']==select_segmento)&(SegRegIntfijo['REGIÓN'].isin(select_regionescomp))]
             st.plotly_chart(PlotlyLineasComparacion(SegyRegIntfijo,'REGIÓN',select_variable,select_regionescomp) , use_containter_width=True)   
         with tab5:
-            col1,col2,col3=st.columns([0.1,1,0.1])
-            with col2:
-                select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
-                IntFijoRegTec=Reg_info(InternetFijo)[3]
-                IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
-                st.plotly_chart(PlotlyLineasTecnologia(IntFijoRegTec,select_variable),use_containter_width=True)
-
-                          
+            select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
+            IntFijoRegTec=Reg_info(InternetFijo)[3]
+            IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
+            st.plotly_chart(tecplottest(IntFijoRegTec,select_variable),use_containter_width=True)
+                        
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental','Tecnología'])
@@ -775,9 +845,8 @@ if select_servicio=='Internet Fijo':
                 select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
                 IntFijoDepTec=Dep_info(InternetFijo)[3]
                 IntFijoDepTec=IntFijoDepTec[(IntFijoDepTec['SEGMENTO']==select_segmento)&(IntFijoDepTec['CODIGO_DEPARTAMENTO']==select_dpto)]             
-                st.plotly_chart(PlotlyLineasTecnologia(IntFijoDepTec,select_variable),use_containter_width=True)
-
-               
+                st.plotly_chart(tecplottest(IntFijoDepTec,select_variable),use_containter_width=True)
+             
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
         tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal','Tecnología'])
@@ -801,7 +870,7 @@ if select_servicio=='Internet Fijo':
                 select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
                 IntFijoMuniTec=Muni_info(InternetFijo)[3]
                 IntFijoMuniTec=IntFijoMuniTec[(IntFijoMuniTec['SEGMENTO']==select_segmento)&(IntFijoMuniTec['CODIGO_MUNICIPIO']==select_muni)]             
-                st.plotly_chart(PlotlyLineasTecnologia(IntFijoMuniTec,select_variable),use_containter_width=True)
+                st.plotly_chart(tecplottest(IntFijoMuniTec,select_variable),use_containter_width=True)
 
 #Televisión por suscripción        
 if select_servicio=='TV por suscripción':
