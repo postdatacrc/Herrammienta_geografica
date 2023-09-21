@@ -45,7 +45,7 @@ st.markdown(Barra_superior,unsafe_allow_html=True)
 st.sidebar.markdown("""<b>Menú</b>""", unsafe_allow_html=True)
 
 #Función para traer base
-@st.cache()
+#@st.cache()
 def T13(allow_output_mutation=True):
     url_bases = 'https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/Bases_T13/'
     dfT13 = []
