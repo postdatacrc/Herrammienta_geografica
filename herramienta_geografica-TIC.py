@@ -808,7 +808,7 @@ if select_servicio=='Internet Fijo':
             select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
             IntFijoRegTec=Reg_info(InternetFijo)[3]
             IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
-            st.pyplot(tecplottest(IntFijoRegTec,select_variable))
+            st.plotly_chart(tecplottest(IntFijoRegTec,select_variable))
                         
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
