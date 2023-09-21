@@ -12,7 +12,6 @@ from streamlit_folium import folium_static
 from st_aggrid import AgGrid
 import geopandas as gpd
 import folium
-import altair as alt
 import urllib
 from streamlit_folium import folium_static
 #from streamlit_option_menu import option_menu
@@ -357,68 +356,6 @@ def tecplottest(df,column):
     fig.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=11),showlegend=True)
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')   
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values) 
-    return fig
-
-def tecplottestplt(df, column):
-    # Calculate mean value
-    mean_val = df[column].mean()
-    
-    # Convert values if needed
-    if mean_val >= 1e9:
-        y_title = f"{column} (Miles de Millones)"
-        df[column] = round(df[column] / 1e9, 2)
-    elif mean_val >= 1e6:
-        y_title = f"{column} (Millones)"
-        df[column] = round(df[column] / 1e6, 2)
-    else:
-        y_title = f"{column}"
-    
-    # Define max and min values
-    max_val = df[column].max()
-    min_val = df[column].min()
-    
-    # Format values for tick labels
-    num_ticks = 10
-    step = (max_val - min_val) / (num_ticks - 1)
-    num_values = [round(min_val + i * step, 1) for i in range(num_ticks)]
-    text_values = ['{:,.1f}'.format(number) for number in num_values]
-
-    # Create a figure and axis
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    # Create a color dictionary
-    dict_colorest_tec = {
-            'Cable': 'red',
-            'Fibra Óptica': 'orange',
-            'Inalambrico': 'green',
-            'Satelital': 'purple',
-            'xDSL': 'blue',
-            'Otras': 'black'
-        }
-
-    # Iterate through unique 'CODTEC' values and plot lines
-    for tec in df['CODTEC'].unique():
-        dftec = df[df['CODTEC'] == tec]
-        ax.plot(dftec['PERIODO'], dftec[column], label=tec, linewidth=3, marker='o', markersize=7, color=dict_colorest_tec[tec])
-
-    # Set y-axis title and labels
-    ax.set_ylabel(y_title)
-    ax.set_yticks(num_values)
-    ax.set_yticklabels(text_values)
-
-    # Set x-axis labels
-    ax.set_xticks(df['PERIODO'])
-    ax.set_xticklabels(df['PERIODO'], rotation=0, fontsize=14)
-
-    # Add a legend
-    ax.legend(loc='upper left', fontsize=11)
-
-    # Set plot title
-    plt.title(f"{column.capitalize()} por tecnología")
-
-    # Remove grid lines from the background
-    ax.grid(True, color='gray', linestyle='--', linewidth=0.5)
-
     return fig
 
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
@@ -871,7 +808,7 @@ if select_servicio=='Internet Fijo':
             select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
             IntFijoRegTec=Reg_info(InternetFijo)[3]
             IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
-            st.pyplot(tecplottestplt(IntFijoRegTec,select_variable))
+            st.pyplot(tecplottest(IntFijoRegTec,select_variable))
                         
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
