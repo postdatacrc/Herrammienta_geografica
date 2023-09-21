@@ -1091,10 +1091,8 @@ if select_servicio=='Empaquetados':
             else:
                 pass
             EmpDep=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaNacional(EmpDep,periodo),width=450)                
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaNacional(EmpDep,periodo))                
                 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)
@@ -1121,11 +1119,9 @@ if select_servicio=='Empaquetados':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            EmpReg=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaRegional(EmpReg,periodo,select_reg),width=450) 
+            EmpReg=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaRegional(EmpReg,periodo,select_reg)) 
             
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
@@ -1148,16 +1144,13 @@ if select_servicio=='Empaquetados':
                 Empaquetados_Dep2_html = f'<div class="styled-table">{Empaquetados_Dep2.to_html(index=False)}</div>'  
                 st.plotly_chart(PlotlyTableEmpaquetados(Empaquetados_Dep2,select_variable.capitalize()),use_container_width=True)
         with tab3:
-            select_empaq_mapa=st.multiselect('Escoja los servicios a graficar',Servicios,['Duo Play 1','Duo Play 2','Duo Play 3','Triple Play'])
             if select_variable!='ACCESOS':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            EmpMuni=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq_mapa)].groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaMunicipal(EmpMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450)                                 
+            EmpMuni=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaMunicipal(EmpMuni,periodo,select_dpto.split('-')[1].zfill(2)))                                 
             
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)
