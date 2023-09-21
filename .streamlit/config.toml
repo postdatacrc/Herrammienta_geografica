@@ -7,3 +7,5 @@ font = "sans serif"
 [server]
 enableCORS = true
 fileWatcherType = "poll"
+headless = true
+port = 8501
