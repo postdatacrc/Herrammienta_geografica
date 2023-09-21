@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
+import matplotlib.pyplot as plt
 import streamlit as st
 from plotly.subplots import make_subplots
 import re
@@ -87,8 +88,6 @@ def T13(allow_output_mutation=True):
     
     return FT_13
 FT1_3=T13()
-
-
 
 MUNICIPIOS=sorted(FT1_3['CODIGO_MUNICIPIO'].unique().tolist())
 DEPARTAMENTOS=sorted(FT1_3['CODIGO_DEPARTAMENTO'].unique().tolist())
@@ -361,6 +360,68 @@ def tecplottest(df,column):
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values) 
     return fig
 
+def tecplottestplt(df, column):
+    # Calculate mean value
+    mean_val = df[column].mean()
+    
+    # Convert values if needed
+    if mean_val >= 1e9:
+        y_title = f"{column} (Miles de Millones)"
+        df[column] = round(df[column] / 1e9, 2)
+    elif mean_val >= 1e6:
+        y_title = f"{column} (Millones)"
+        df[column] = round(df[column] / 1e6, 2)
+    else:
+        y_title = f"{column}"
+    
+    # Define max and min values
+    max_val = df[column].max()
+    min_val = df[column].min()
+    
+    # Format values for tick labels
+    num_ticks = 10
+    step = (max_val - min_val) / (num_ticks - 1)
+    num_values = [round(min_val + i * step, 1) for i in range(num_ticks)]
+    text_values = ['{:,.1f}'.format(number) for number in num_values]
+
+    # Create a figure and axis
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Create a color dictionary
+    dict_colorest_tec = {
+            'Cable': 'red',
+            'Fibra Óptica': 'orange',
+            'Inalambrico': 'green',
+            'Satelital': 'purple',
+            'xDSL': 'blue',
+            'Otras': 'black'
+        }
+
+    # Iterate through unique 'CODTEC' values and plot lines
+    for tec in df['CODTEC'].unique():
+        dftec = df[df['CODTEC'] == tec]
+        ax.plot(dftec['PERIODO'], dftec[column], label=tec, linewidth=3, marker='o', markersize=7, color=dict_colorest_tec[tec])
+
+    # Set y-axis title and labels
+    ax.set_ylabel(y_title)
+    ax.set_yticks(num_values)
+    ax.set_yticklabels(text_values)
+
+    # Set x-axis labels
+    ax.set_xticks(df['PERIODO'])
+    ax.set_xticklabels(df['PERIODO'], rotation=0, fontsize=14)
+
+    # Add a legend
+    ax.legend(loc='upper left', fontsize=11)
+
+    # Set plot title
+    plt.title(f"{column.capitalize()} por tecnología")
+
+    # Remove grid lines from the background
+    ax.grid(True, color='gray', linestyle='--', linewidth=0.5)
+
+    return fig
+
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
     if df[df['SERVICIO_PAQUETE'].isin(select_empaquetados)].empty==True:
         df2=df
@@ -559,37 +620,38 @@ def MapaMunicipal(df,periodo,codigo_dep):
     return Dep_map    
 
 def MapaRegional(df,periodo,region):
-    mapaporReg=gdf2.merge(df, on=['ID_MUNICIPIO'])
+    mapaporReg=gdf.merge(df, on=['ID_DEPARTAMENTO'])
     mapaporReg=mapaporReg[mapaporReg['PERIODO']==periodo]
-    mapaporReg['ID_MUNICIPIO']=mapaporReg['ID_MUNICIPIO'].astype('str').str.zfill(5)
-    mapaporReg=mapaporReg.merge(Hogares,on=['ID_MUNICIPIO'])
+    mapaporReg['ID_DEPARTAMENTO']=mapaporReg['ID_DEPARTAMENTO'].astype('str')
+    mapaporReg=mapaporReg.merge(HogaresDep,on=['ID_DEPARTAMENTO'])
     mapaporReg['PENETRACION']=round(100*mapaporReg['CANTIDAD_LINEAS_ACCESOS']/mapaporReg['HOGARES'],2)
     mapaporReg=mapaporReg[mapaporReg['REGIÓN']==region]
     #
     dict_regiones = {
-        'REGIÓN ANDINA': ['05', '11', '15', '17', '25', '41', '54', '63', '66', '68', '73'],
+        'REGIÓN ANDINA': ['5', '11', '15', '17', '25', '41', '54', '63', '66', '68', '73'],
         'REGIÓN AMAZÓNICA': ['91', '18', '94', '95', '86', '97'],
         'REGIÓN PACÍFICA': ['76', '27', '19', '52'],
-        'REGIÓN CARIBE': ['08', '13', '20', '23', '44', '47', '70', '88'],
+        'REGIÓN CARIBE': ['8', '13', '20', '23', '44', '47', '70', '88'],
         'REGIÓN ORINOQUÍA': ['81', '85', '50', '99']
     }
 
     filtered_lines_reg = []
-    for feature in Colombian_MUNI['features']:
-        if feature['properties']['DPTO_CCDGO'] in dict_regiones[region]:
+    for feature in Colombian_DPTO['features']:
+        if feature['properties']['DPTO'] in dict_regiones[region]:
             filtered_lines_reg.append(feature)
-    Colombian_MUNI_sliced_reg={'features':filtered_lines_reg}
-    Colombian_MUNI_sliced_reg['type']='FeatureCollection'     
+    Colombian_DPTO_sliced_reg={'features':filtered_lines_reg}
+    Colombian_DPTO_sliced_reg['type']='FeatureCollection' 
+    
     # create a plain world map
     Reg_map = folium.Map(location=centroid_reg(region), zoom_start=6,tiles='cartodbpositron')
     tiles = ['stamenwatercolor', 'cartodbpositron', 'openstreetmap', 'stamenterrain']
     for tile in tiles:
         folium.TileLayer(tile).add_to(Reg_map)
     choropleth=folium.Choropleth(
-        geo_data=Colombian_MUNI_sliced_reg,
+        geo_data=Colombian_DPTO_sliced_reg,
         data=mapaporReg,
-        columns=['ID_MUNICIPIO', 'PENETRACION'],
-        key_on='feature.properties.MPIO_CCNCT',
+        columns=['ID_DEPARTAMENTO', 'PENETRACION'],
+        key_on='feature.properties.DPTO',
         fill_color='Reds', 
         fill_opacity=0.9, 
         line_opacity=0.9,
@@ -599,7 +661,7 @@ def MapaRegional(df,periodo,region):
     # Adicionar nombres del departamento
     style_function = "font-size: 15px; font-weight: bold"
     choropleth.geojson.add_child(
-        folium.features.GeoJsonTooltip(['MPIO_CCNCT'], style=style_function, labels=False))
+        folium.features.GeoJsonTooltip(['NOMBRE_DPT'], style=style_function, labels=False))
     folium.LayerControl().add_to(Reg_map)
 
     #Adicionar valores porcentaje
@@ -617,8 +679,8 @@ def MapaRegional(df,periodo,region):
         control=False,
         highlight_function=highlight_function, 
         tooltip=folium.features.GeoJsonTooltip(
-            fields=['MUNICIPIO','ID_MUNICIPIO','DPTO_CNMBR','PENETRACION'],
-            aliases=['Municipio','ID','DPTO','Penetración'],
+            fields=['DEPARTAMENTO','ID_DEPARTAMENTO','PENETRACION'],
+            aliases=['Departamento','ID','Penetración'],
             style=("background-color: white; color: #333333; font-family: helvetica; font-size: 12px; padding: 10px;") 
         )
     )
@@ -627,6 +689,7 @@ def MapaRegional(df,periodo,region):
     return Reg_map
 
 #Extracción de información por ámbito
+
 def Nac_info(df):
     dfNac=pd.concat([df.groupby(['PERIODO', 'CODSEG']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
@@ -691,6 +754,8 @@ dict_variables_inverse={v: k for k, v in dict_variables.items()}
 select_variable=st.sidebar.selectbox('Variable',['ACCESOS','VALOR FACTURADO', 'NÚMERO EMPRESAS']) 
 first_variables=['ACCESOS','NÚMERO EMPRESAS','VALOR FACTURADO']
 #Función para calcular métricas del último periodo
+PERIODOS_T1_3=sorted(FT1_3['PERIODO'].unique().tolist())
+len_PERIODOS_T1_3=len(PERIODOS_T1_3)
 last_period=sorted(FT1_3['PERIODO'].unique().tolist())[-1]
 def metricServ(df, amb, var):
     if var == 'NÚMERO EMPRESAS':
@@ -727,7 +792,7 @@ def metricServ(df, amb, var):
     else:
         y_title = f"{x}".replace('.', ',') 
     return y_title
-    
+  
 #Estructura con métricas del último periodo
 if select_variable in first_variables:
     with st.container():
@@ -755,6 +820,7 @@ select_servicio=st.radio('Servicio',['Internet Fijo','TV por suscripción','Tele
 #Internet Fijo
 if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
+    
     if select_ambito=='Nacional':
         tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Tecnología'])
         with tab1:
@@ -769,9 +835,7 @@ if select_servicio=='Internet Fijo':
             else:
                 pass
             InternetFijoDep=InternetFijo.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            #col1,col2,col3=st.columns([0.5,2,0.5])
-            #with col2:
-            periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaNacional(InternetFijoDep,periodo))  
         with tab4:
             select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
@@ -793,11 +857,9 @@ if select_servicio=='Internet Fijo':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            InternetFijoReg=InternetFijo.groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
-            #col1,col2,col3=st.columns([1,1.5,1])
-            #with col2:
-            periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-            folium_static(MapaRegional(InternetFijoReg,periodo,select_reg),width=450)
+            InternetFijoReg=InternetFijo.groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaRegional(InternetFijoReg,periodo,select_reg))
         with tab4:
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
@@ -810,7 +872,7 @@ if select_servicio=='Internet Fijo':
             select_segmento=st.radio('Seleccione el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
             IntFijoRegTec=Reg_info(InternetFijo)[3]
             IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
-            st.plotly_chart(tecplottest(IntFijoRegTec,select_variable),use_containter_width=True)
+            st.pyplot(tecplottestplt(IntFijoRegTec,select_variable))
                         
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -827,10 +889,8 @@ if select_servicio=='Internet Fijo':
             else:
                 pass
             InternetFijoMuni=InternetFijo.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaMunicipal(InternetFijoMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaMunicipal(InternetFijoMuni,periodo,select_dpto.split('-')[1].zfill(2))) 
         with tab4:
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
@@ -889,10 +949,8 @@ if select_servicio=='TV por suscripción':
             else:
                 pass
             TVporSusDep=TVporSus.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaNacional(TVporSusDep,periodo),width=450)   
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaNacional(TVporSusDep,periodo))   
 
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -908,11 +966,9 @@ if select_servicio=='TV por suscripción':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            TVporSusReg=TVporSus.groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaRegional(TVporSusReg,periodo,select_reg),width=450) 
+            TVporSusReg=TVporSus.groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaRegional(TVporSusReg,periodo,select_reg)) 
         with tab4:
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
@@ -938,10 +994,8 @@ if select_servicio=='TV por suscripción':
             else:
                 pass 
             TVporSusMuni=TVporSus.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaMunicipal(TVporSusMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaMunicipal(TVporSusMuni,periodo,select_dpto.split('-')[1].zfill(2))) 
         with tab4:
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
@@ -987,10 +1041,8 @@ if select_servicio=='Telefonía fija':
             else:
                 pass
             TelfijaDep=Telfija.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaNacional(TelfijaDep,periodo),width=450) 
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaNacional(TelfijaDep,periodo)) 
                     
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -1006,11 +1058,9 @@ if select_servicio=='Telefonía fija':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            TelfijaReg=Telfija.groupby(['PERIODO','REGIÓN','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaRegional(TelfijaReg,periodo,select_reg),width=450) 
+            TelfijaReg=Telfija.groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaRegional(TelfijaReg,periodo,select_reg)) 
         with tab4:
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
@@ -1036,10 +1086,8 @@ if select_servicio=='Telefonía fija':
             else:
                 pass
             TelfijaMuni=Telfija.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
-            col1,col2,col3=st.columns([1,1.5,1])
-            with col2:
-                periodo=st.selectbox('Escoja el periodo',['2022-T1','2022-T2','2022-T3','2022-T4'],index=3)
-                folium_static(MapaMunicipal(TelfijaMuni,periodo,select_dpto.split('-')[1].zfill(2)),width=450) 
+            periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
+            folium_static(MapaMunicipal(TelfijaMuni,periodo,select_dpto.split('-')[1].zfill(2))) 
         with tab4:
             col1,col2,col3=st.columns([1,1.5,1])
             with col2:
