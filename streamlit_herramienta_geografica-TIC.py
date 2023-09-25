@@ -45,8 +45,8 @@ st.markdown(Barra_superior,unsafe_allow_html=True)
 st.sidebar.markdown("""<b>Menú</b>""", unsafe_allow_html=True)
 
 #Función para traer base
-#@st.cache()
-def T13(allow_output_mutation=True):
+@st.cache(allow_output_mutation=True)
+def T13():
     url_bases = 'https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/Bases_T13/'
     dfT13 = []
     for i in range(13):
@@ -93,10 +93,9 @@ REGIONES=sorted(FT1_3['REGIÓN'].unique().tolist())
 
 #Hogares para cálculo de la penetración
 Hogares=pd.read_csv('https://raw.githubusercontent.com/postdatacrc/Herrammienta_geografica/main/HOGARES.csv',delimiter=';')
-Hogares=Hogares[Hogares['ANNO']==2022]
 Hogares['ID_DEPARTAMENTO']=Hogares['ID_DEPARTAMENTO'].astype('str')
 Hogares['ID_MUNICIPIO']=Hogares['ID_MUNICIPIO'].astype('str').str.zfill(5)
-HogaresDep=Hogares.groupby(['ID_DEPARTAMENTO'])['HOGARES'].sum().reset_index()
+HogaresDep=Hogares.groupby(['ANNO','ID_DEPARTAMENTO'])['HOGARES'].sum().reset_index()
 
 #Centroides departamentos y regiones
 def centroid_dep(cod_dep):
@@ -173,6 +172,7 @@ dict_colorest_tec={'Cable':'rgb(255, 51, 51)','Fibra Óptica':'rgb(255, 153, 51)
                        'Satelital':'rgb(153,51,255)','xDSL':'rgb(51, 153, 255)','Otras':'Black'}
 
 #Funciones para graficar
+@st.cache()
 def PlotlyBarrasSegmento(df,column):
     fig=make_subplots(rows=1,cols=1)
     mean_val = df[column].mean()
@@ -227,7 +227,7 @@ def PlotlyBarrasSegmento(df,column):
                                  mode='text',text=df[df['SEGMENTO']=='Total']['texto'],
                                  textposition='top center',textfont=dict(color='black', size=14),name=None,showlegend=False))        
     return fig
-
+@st.cache()
 def PlotlyLineasComparacion(df,ambito,column,complist):
     fig=make_subplots(rows=1,cols=1)
     mean_val = df[column].mean()
@@ -269,7 +269,7 @@ def PlotlyLineasComparacion(df,ambito,column,complist):
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')
     return fig
-
+@st.cache()
 def PlotlyLineasTecnologia(df,column):
     fig=make_subplots(rows=1,cols=1)
     mean_val = df[column].mean()
@@ -313,7 +313,7 @@ def PlotlyLineasTecnologia(df,column):
     #fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
     #fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values)
     return fig
-
+@st.cache()
 def tecplottest(df,column):
     fig=make_subplots(rows=1,cols=1)
     mean_val = df[column].mean()
@@ -357,7 +357,7 @@ def tecplottest(df,column):
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')   
     fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)',tickvals=num_values, ticktext=text_values) 
     return fig
-
+@st.cache()
 def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
     if df[df['SERVICIO_PAQUETE'].isin(select_empaquetados)].empty==True:
         df2=df
@@ -402,7 +402,7 @@ def PlotlyBarrasEmpaquetados(df,column,select_empaquetados):
                                 mode='text',text=df2[column].map('{:,.2f}'.format),textposition='top center',
                 textfont=dict(color='black', size=14),name=None,showlegend=False))           
     return fig
-
+@st.cache()
 def PlotlyTable(df,title):
     for cols in [x for x in df.columns if x!='PERIODO']:
         df[cols] = df[cols].astype(float).map('{:,.0f}'.format).astype('str')
@@ -422,7 +422,7 @@ def PlotlyTable(df,title):
                    font_color = 'black', font_family='Tahoma', 
                    title_font_size = 20, title_x = 0.5) 
     return fig
-
+@st.cache()
 def PlotlyTableEmpaquetados(df,title):
     for cols in [x for x in df.columns if x not in ['PERIODO','SERVICIO_PAQUETE']]:
         df[cols] = df[cols].astype(float).map('{:,.0f}'.format).astype('str')
@@ -441,13 +441,32 @@ def PlotlyTableEmpaquetados(df,title):
                    font_color = 'black', font_family='Tahoma', 
                    title_font_size = 20, title_x = 0.5) 
     return fig
-
+@st.cache()
+def PlotlyVel(df,ambito):
+    figIntFijoVel=go.Figure()
+    figIntFijoVel.add_trace(go.Scatter(x=df['PERIODO'],y=df['VELOCIDAD DESCARGA'],name='Descarga',line=dict(width=3),marker=dict(size=7,color='rgb(255,102,102)')))
+    figIntFijoVel.add_trace(go.Scatter(x=df['PERIODO'],y=df['VELOCIDAD CARGA'],name='Carga',line=dict(width=3),marker=dict(size=7,color='rgb(102,102,255)')))
+    figIntFijoVel.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text='Velocidades (Mbps)')                        
+    figIntFijoVel.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=18),title_font=dict(family="Tahoma"),title_text=None
+    ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2,automargin=True)
+    figIntFijoVel.update_layout(legend_title=None)
+    figIntFijoVel.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+    title={
+    'text':f"<b>Velocidades ({ambito})</b>",
+    'y':0.95,
+    'x':0.5,
+    'xanchor': 'center',
+    'yanchor': 'top'})
+    figIntFijoVel.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=15),showlegend=True)
+    figIntFijoVel.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')   
+    figIntFijoVel.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')  
+    return figIntFijoVel   
 #Funciones para hacer los mapas
 def MapaNacional(df,periodo):
     mapaNacional=gdf.merge(df, on=['ID_DEPARTAMENTO'])
     mapaNacional=mapaNacional[mapaNacional['PERIODO']==periodo]
     mapaNacional['ID_DEPARTAMENTO']=mapaNacional['ID_DEPARTAMENTO'].astype('str')
-    mapaNacional=mapaNacional.merge(HogaresDep,on=['ID_DEPARTAMENTO'])
+    mapaNacional=mapaNacional.merge(HogaresDep,on=['ANNO','ID_DEPARTAMENTO'])
     mapaNacional['PENETRACION']=round(100*mapaNacional['CANTIDAD_LINEAS_ACCESOS']/mapaNacional['HOGARES'],2)
     # create a plain world map
     Nac_map = folium.Map(location=[4.570868, -74.297333], zoom_start=5,tiles='cartodbpositron')
@@ -496,10 +515,12 @@ def MapaNacional(df,periodo):
     return Nac_map    
 
 def MapaMunicipal(df,periodo,codigo_dep):
-    mapaporDep=gdf2.merge(df, on=['ID_MUNICIPIO'])
+    mapaporDep=gdf2.merge(df, on=['ID_MUNICIPIO'], how='left')
+    mapaporDep['PERIODO']=mapaporDep['PERIODO'].fillna(periodo)
+    mapaporDep['MUNICIPIO']=mapaporDep['MUNICIPIO'].fillna(mapaporDep['DESC_MUNICIPIO'])    
     mapaporDep=mapaporDep[mapaporDep['PERIODO']==periodo]
     mapaporDep['ID_MUNICIPIO']=mapaporDep['ID_MUNICIPIO'].astype('str').str.zfill(5)
-    mapaporDep=mapaporDep.merge(Hogares,on=['ID_MUNICIPIO'])
+    mapaporDep=mapaporDep.merge(Hogares,on=['ANNO','ID_MUNICIPIO'])
     mapaporDep['PENETRACION']=round(100*mapaporDep['CANTIDAD_LINEAS_ACCESOS']/mapaporDep['HOGARES'],2)
     mapaporDep=mapaporDep[mapaporDep['DPTO_CCDGO']==codigo_dep]
     #
@@ -559,7 +580,7 @@ def MapaRegional(df,periodo,region):
     mapaporReg=gdf.merge(df, on=['ID_DEPARTAMENTO'])
     mapaporReg=mapaporReg[mapaporReg['PERIODO']==periodo]
     mapaporReg['ID_DEPARTAMENTO']=mapaporReg['ID_DEPARTAMENTO'].astype('str')
-    mapaporReg=mapaporReg.merge(HogaresDep,on=['ID_DEPARTAMENTO'])
+    mapaporReg=mapaporReg.merge(HogaresDep,on=['ANNO','ID_DEPARTAMENTO'])
     mapaporReg['PENETRACION']=round(100*mapaporReg['CANTIDAD_LINEAS_ACCESOS']/mapaporReg['HOGARES'],2)
     mapaporReg=mapaporReg[mapaporReg['REGIÓN']==region]
     #
@@ -635,7 +656,10 @@ def Nac_info(df):
     dfNacTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODTEC']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO','CODTEC']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
     dfNacTec=dfNacTec[dfNacTec['CODTEC']!='No Aplica'].rename(columns=dict_variables)    
-    dfNacVel=df.groupby(['PERIODO']).apply(lambda x: np.average(x['VELOCIDAD_EFECTIVA_DOWNSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS'])).reset_index()
+    dfNacVel=df.groupby(['PERIODO']).apply(lambda x: pd.Series({
+    'VELOCIDAD DESCARGA': round(np.average(x['VELOCIDAD_EFECTIVA_DOWNSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2),
+    'VELOCIDAD CARGA': round(np.average(x['VELOCIDAD_EFECTIVA_UPSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2)
+    })).reset_index()
     return dfNac, dfNac2, dfNacTec, dfNacVel
 
 def Reg_info(df):
@@ -652,7 +676,6 @@ def Reg_info(df):
     dfRegTec=pd.concat([df.groupby(['PERIODO', 'CODSEG','CODTEC','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).reset_index(),
     df.groupby(['PERIODO','CODTEC','REGIÓN']).agg({'CANTIDAD_LINEAS_ACCESOS': 'sum', 'VALOR_FACTURADO_O_COBRADO': 'sum', 'ID_EMPRESA': 'nunique'}).assign(CODSEG='Total').reset_index()]).sort_values(by=['PERIODO'])
     dfRegTec=dfRegTec[dfRegTec['CODTEC']!='No Aplica'].rename(columns=dict_variables)
-
     return dfReg_s,dfReg2,dfReg,dfRegTec,dfRegtotal
 
 def Dep_info(df):
@@ -683,6 +706,13 @@ def Muni_info(df):
 
     return dfMUNI_s,dfMUNI2,dfMUNI,dfMUNITec
 
+@st.cache()
+def Reg_info_vel(df):
+    dfRegVel=df.groupby(['PERIODO','REGIÓN']).apply(lambda x: pd.Series({
+    'VELOCIDAD DESCARGA': round(np.average(x['VELOCIDAD_EFECTIVA_DOWNSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2),
+    'VELOCIDAD CARGA': round(np.average(x['VELOCIDAD_EFECTIVA_UPSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2)
+    })).reset_index()
+    return dfRegVel    
 #Botón ámbito
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Regional','Departamental','Municipal'])
 if select_ambito=='Regional':
@@ -767,7 +797,7 @@ if select_servicio=='Internet Fijo':
     st.markdown(r"""<div class="titulo"><h2>Internet fijo</h2></div>""",unsafe_allow_html=True)
     
     if select_ambito=='Nacional':
-        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Mapa','Tecnología'])
+        tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Mapa','Tecnología','Velocidades'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Nac_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -779,7 +809,7 @@ if select_servicio=='Internet Fijo':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            InternetFijoDep=InternetFijo.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            InternetFijoDep=InternetFijo.groupby(['ANNO','PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaNacional(InternetFijoDep,periodo))  
         with tab4:
@@ -787,10 +817,31 @@ if select_servicio=='Internet Fijo':
             IntFijoNacTec=Nac_info(InternetFijo)[2]
             IntFijoNacTec=IntFijoNacTec[IntFijoNacTec['SEGMENTO']==select_segmento] 
             st.plotly_chart(tecplottest(IntFijoNacTec,select_variable),use_container_width=True)
-                           
+        with tab5:
+            IntFijoNacVel=Nac_info(InternetFijo)[3]
+            figIntFijoNacVel=go.Figure()
+            figIntFijoNacVel.add_trace(go.Scatter(x=IntFijoNacVel['PERIODO'],y=IntFijoNacVel['VELOCIDAD DESCARGA'],name='Descarga',line=dict(width=3),marker=dict(size=7,color='rgb(255,102,102)')))
+            figIntFijoNacVel.add_trace(go.Scatter(x=IntFijoNacVel['PERIODO'],y=IntFijoNacVel['VELOCIDAD CARGA'],name='Carga',line=dict(width=3),marker=dict(size=7,color='rgb(102,102,255)')))
+            figIntFijoNacVel.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text='Velocidades (Mbps)')                        
+            figIntFijoNacVel.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=18),title_font=dict(family="Tahoma"),title_text=None
+            ,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2,automargin=True)
+            figIntFijoNacVel.update_layout(legend_title=None)
+            figIntFijoNacVel.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+            title={
+            'text':"<b>Velocidades (Nacional)</b>",
+            'y':0.95,
+            'x':0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'})
+            figIntFijoNacVel.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=15),showlegend=True)
+            figIntFijoNacVel.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')   
+            figIntFijoNacVel.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)') 
+
+            st.plotly_chart(figIntFijoNacVel,use_container_width=True)
+                              
     if select_ambito=='Regional':
         st.markdown(r"""<div><center><h3>"""+select_reg+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación regional','Tecnología'])
+        tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación regional','Tecnología','Velocidades'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Reg_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -802,7 +853,7 @@ if select_servicio=='Internet Fijo':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            InternetFijoReg=InternetFijo.groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            InternetFijoReg=InternetFijo.groupby(['ANNO','PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaRegional(InternetFijoReg,periodo,select_reg))
         with tab4:
@@ -817,6 +868,27 @@ if select_servicio=='Internet Fijo':
             IntFijoRegTec=Reg_info(InternetFijo)[3]
             IntFijoRegTec=IntFijoRegTec[(IntFijoRegTec['SEGMENTO']==select_segmento)&(IntFijoRegTec['REGIÓN']==select_reg)]             
             st.plotly_chart(tecplottest(IntFijoRegTec,select_variable))
+        with tab6:
+            IntFijoRegVel=Reg_info_vel(InternetFijo)
+            IntFijoRegVel=IntFijoRegVel[IntFijoRegVel['REGIÓN']==select_reg]
+            st.plotly_chart(PlotlyVel(IntFijoRegVel),use_container_width=True)
+            #figIntFijoRedVel=go.Figure()
+            #figIntFijoRedVel.add_trace(go.Scatter(x=IntFijoRegVel['PERIODO'],y=IntFijoRegVel['VELOCIDAD DESCARGA'],name='Descarga',line=dict(width=3),marker=dict(size=7,color='rgb(255,102,102)')))
+            #figIntFijoRedVel.add_trace(go.Scatter(x=IntFijoRegVel['PERIODO'],y=IntFijoRegVel['VELOCIDAD CARGA'],name='Carga',line=dict(width=3),marker=dict(size=7,color='rgb(102,102,255)')))
+            #figIntFijoRedVel.update_yaxes(tickfont=dict(family='Tahoma', color='black', size=16),title_font=dict(family="Tahoma"),titlefont_size=16, title_text='Velocidades (Mbps)')                        
+            #figIntFijoRedVel.update_xaxes(tickangle=0, tickfont=dict(family='Tahoma', color='black', size=18),title_font=dict(family="Tahoma"),title_text=None
+            #,zeroline=True,linecolor = 'rgba(192, 192, 192, 0.8)',zerolinewidth=2,automargin=True)
+            #figIntFijoRedVel.update_layout(legend_title=None)
+            #figIntFijoRedVel.update_layout(font_color="Black",font_family="Tahoma",title_font_color="Black",titlefont_size=20,
+            #title={
+            #'text':f"<b>Velocidades ({select_reg})</b>",
+            #'y':0.95,
+            #'x':0.5,
+            #'xanchor': 'center',
+            #'yanchor': 'top'})
+            #figIntFijoRedVel.update_layout(legend=dict(orientation="h",xanchor='center',y=1.1,x=0.5,font_size=15),showlegend=True)
+            #figIntFijoRedVel.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')   
+            #figIntFijoRedVel.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(192, 192, 192, 0.8)')                 
                         
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
@@ -832,9 +904,10 @@ if select_servicio=='Internet Fijo':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            InternetFijoMuni=InternetFijo.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            InternetFijoMuni=InternetFijo.groupby(['ANNO','PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaMunicipal(InternetFijoMuni,periodo,select_dpto.split('-')[1].zfill(2))) 
+
         with tab4:
             select_segmento=st.radio('Escoja el segmento',['Corporativo','Residencial','Total'],horizontal=True,index=2)
             DEPARTAMENTOScomp=DEPARTAMENTOS+['COLOMBIA']
@@ -891,7 +964,7 @@ if select_servicio=='TV por suscripción':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            TVporSusDep=TVporSus.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            TVporSusDep=TVporSus.groupby(['ANNO','PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaNacional(TVporSusDep,periodo))   
 
@@ -909,7 +982,7 @@ if select_servicio=='TV por suscripción':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            TVporSusReg=TVporSus.groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            TVporSusReg=TVporSus.groupby(['ANNO','PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaRegional(TVporSusReg,periodo,select_reg)) 
         with tab4:
@@ -935,7 +1008,7 @@ if select_servicio=='TV por suscripción':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass 
-            TVporSusMuni=TVporSus.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            TVporSusMuni=TVporSus.groupby(['ANNO','PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaMunicipal(TVporSusMuni,periodo,select_dpto.split('-')[1].zfill(2))) 
         with tab4:
@@ -981,7 +1054,7 @@ if select_servicio=='Telefonía fija':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            TelfijaDep=Telfija.groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            TelfijaDep=Telfija.groupby(['ANNO','PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaNacional(TelfijaDep,periodo)) 
                     
@@ -999,7 +1072,7 @@ if select_servicio=='Telefonía fija':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            TelfijaReg=Telfija.groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            TelfijaReg=Telfija.groupby(['ANNO','PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaRegional(TelfijaReg,periodo,select_reg)) 
         with tab4:
@@ -1025,7 +1098,7 @@ if select_servicio=='Telefonía fija':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            TelfijaMuni=Telfija.groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            TelfijaMuni=Telfija.groupby(['ANNO','PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaMunicipal(TelfijaMuni,periodo,select_dpto.split('-')[1].zfill(2))) 
         with tab4:
@@ -1090,7 +1163,7 @@ if select_servicio=='Empaquetados':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            EmpDep=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            EmpDep=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['ANNO','PERIODO','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaNacional(EmpDep,periodo))                
                 
@@ -1119,7 +1192,7 @@ if select_servicio=='Empaquetados':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            EmpReg=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
+            EmpReg=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['ANNO','PERIODO','REGIÓN','ID_DEPARTAMENTO','DEPARTAMENTO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()            
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaRegional(EmpReg,periodo,select_reg)) 
             
@@ -1148,7 +1221,7 @@ if select_servicio=='Empaquetados':
                 st.warning(f'El mapa representa la penetración (Accesos por 100 hogares), no la variable {select_variable}')  
             else:
                 pass
-            EmpMuni=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
+            EmpMuni=Empaquetados[Empaquetados['SERVICIO_PAQUETE'].isin(select_empaq)].groupby(['ANNO','PERIODO','ID_MUNICIPIO','MUNICIPIO'])['CANTIDAD_LINEAS_ACCESOS'].sum().reset_index()
             periodo=st.selectbox('Escoja el periodo',PERIODOS_T1_3,index=len_PERIODOS_T1_3-1)
             folium_static(MapaMunicipal(EmpMuni,periodo,select_dpto.split('-')[1].zfill(2)))                                 
             
