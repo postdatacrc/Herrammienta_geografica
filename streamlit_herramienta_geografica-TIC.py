@@ -871,7 +871,7 @@ if select_servicio=='Internet Fijo':
         with tab6:
             IntFijoRegVel=Reg_info_vel(InternetFijo)
             IntFijoRegVel=IntFijoRegVel[IntFijoRegVel['REGIÓN']==select_reg]
-            st.plotly_chart(PlotlyVel(IntFijoRegVel),use_container_width=True)
+            st.plotly_chart(PlotlyVel(IntFijoRegVel,select_reg),use_container_width=True)
             #figIntFijoRedVel=go.Figure()
             #figIntFijoRedVel.add_trace(go.Scatter(x=IntFijoRegVel['PERIODO'],y=IntFijoRegVel['VELOCIDAD DESCARGA'],name='Descarga',line=dict(width=3),marker=dict(size=7,color='rgb(255,102,102)')))
             #figIntFijoRedVel.add_trace(go.Scatter(x=IntFijoRegVel['PERIODO'],y=IntFijoRegVel['VELOCIDAD CARGA'],name='Carga',line=dict(width=3),marker=dict(size=7,color='rgb(102,102,255)')))
