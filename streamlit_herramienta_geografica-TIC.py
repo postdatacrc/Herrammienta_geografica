@@ -713,6 +713,21 @@ def Reg_info_vel(df):
     'VELOCIDAD CARGA': round(np.average(x['VELOCIDAD_EFECTIVA_UPSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2)
     })).reset_index()
     return dfRegVel    
+@st.cache()
+def Dep_info_vel(df):
+    dfRegVel=df.groupby(['PERIODO','CODIGO_DEPARTAMENTO']).apply(lambda x: pd.Series({
+    'VELOCIDAD DESCARGA': round(np.average(x['VELOCIDAD_EFECTIVA_DOWNSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2),
+    'VELOCIDAD CARGA': round(np.average(x['VELOCIDAD_EFECTIVA_UPSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2)
+    })).reset_index()
+    return dfRegVel 
+@st.cache()
+def Muni_info_vel(df):
+    dfRegVel=df.groupby(['PERIODO','CODIGO_MUNICIPIO']).apply(lambda x: pd.Series({
+    'VELOCIDAD DESCARGA': round(np.average(x['VELOCIDAD_EFECTIVA_DOWNSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2),
+    'VELOCIDAD CARGA': round(np.average(x['VELOCIDAD_EFECTIVA_UPSTREAM'].fillna(0), weights=x['CANTIDAD_LINEAS_ACCESOS']),2)
+    })).reset_index()
+    return dfRegVel 
+
 #Botón ámbito
 select_ambito=st.sidebar.selectbox('Ámbito',['Nacional','Regional','Departamental','Municipal'])
 if select_ambito=='Regional':
@@ -892,7 +907,7 @@ if select_servicio=='Internet Fijo':
                         
     if select_ambito=='Departamental':
         st.markdown(r"""<div><center><h3>"""+select_dpto.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental','Tecnología'])
+        tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(['Gráfica','Tabla con datos','Mapa','Comparación departamental','Tecnología','Velocidad'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Dep_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -922,10 +937,14 @@ if select_servicio=='Internet Fijo':
                 IntFijoDepTec=Dep_info(InternetFijo)[3]
                 IntFijoDepTec=IntFijoDepTec[(IntFijoDepTec['SEGMENTO']==select_segmento)&(IntFijoDepTec['CODIGO_DEPARTAMENTO']==select_dpto)]             
                 st.plotly_chart(tecplottest(IntFijoDepTec,select_variable),use_containter_width=True)
+        with tab6:
+            IntFijoDepVel=Dep_info_vel(InternetFijo)
+            IntFijoDepVel=IntFijoDepVel[IntFijoDepVel['CODIGO_DEPARTAMENTO']==select_dpto]
+            st.plotly_chart(PlotlyVel(IntFijoDepVel,select_dpto),use_container_width=True)
              
     if select_ambito=='Municipal':
         st.markdown(r"""<div><center><h3>"""+select_muni.split('-')[0]+"""</h3></center></div>""",unsafe_allow_html=True)        
-        tab1,tab2,tab3,tab4 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal','Tecnología'])
+        tab1,tab2,tab3,tab4,tab5 = st.tabs(['Gráfica','Tabla con datos','Comparación municipal','Tecnología','Velocidades'])
         with tab1:
             st.plotly_chart(PlotlyBarrasSegmento(Muni_info(InternetFijo)[0],select_variable), use_container_width=True)
         with tab2:
@@ -947,6 +966,11 @@ if select_servicio=='Internet Fijo':
                 IntFijoMuniTec=Muni_info(InternetFijo)[3]
                 IntFijoMuniTec=IntFijoMuniTec[(IntFijoMuniTec['SEGMENTO']==select_segmento)&(IntFijoMuniTec['CODIGO_MUNICIPIO']==select_muni)]             
                 st.plotly_chart(tecplottest(IntFijoMuniTec,select_variable),use_containter_width=True)
+        with tab5:
+            IntFijoMuniVel=Muni_info_vel(InternetFijo)
+            IntFijoMuniVel=IntFijoMuniVel[IntFijoMuniVel['CODIGO_MUNICIPIO']==select_muni]
+            st.plotly_chart(PlotlyVel(IntFijoMuniVel,select_muni),use_container_width=True)
+
 
 #Televisión por suscripción        
 if select_servicio=='TV por suscripción':
